@@ -1,5 +1,5 @@
 import pygame,sys,math
-from gamedata import guns
+
 
 pygame.font.init()
 pygame.mixer.init()
@@ -20,7 +20,7 @@ GRAY = (128,128,128)
 ##############################
 
 
-screen = pygame.display.set_mode(SCREENSIZE,flags=pygame.SCALED, vsync=1)
+screen = pygame.display.set_mode(SCREENSIZE,flags=pygame.RESIZABLE, vsync=1)
 clock = pygame.time.Clock()
 
 player = pygame.sprite.GroupSingle()
@@ -187,7 +187,7 @@ class Blocks(pygame.sprite.Sprite):
 
 player.add(Player(500,0,50,50,BLUE))
 gun.add(Gun(10,10))
-blocks.add(Blocks(400,800,1000,100,GREEN))
+blocks.add(Blocks(400,700,1000,100,GREEN))
 blocks.add(Blocks(100,100,200,500,GREEN))
 
 
@@ -199,6 +199,10 @@ while True:
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             gun.sprite.shoot()
+
+        if event.type == pygame.VIDEORESIZE:
+            SCREENSIZE = [event.w, event.h]
+            screen = pygame.display.set_mode(SCREENSIZE, flags=pygame.RESIZABLE, vsync=1)
             
     screen.fill(WHITE)
     player.update()
