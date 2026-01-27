@@ -1,4 +1,3 @@
-https://hageveld-my.sharepoint.com/:w:/g/personal/2122203_hageveld_nl/IQAnsA-81xJ_RZoLq3kFpgC6AW0S790Z_1BHvlSJ1wNIPDs?e=E0l77N
-
+https://hageveld-my.sharepoint.com/:w:/g/personal/2122233_hageveld_nl/IQBs219EIUs_RIYx18HnohugAY1vF1Ie-55p7ISG_vMvPTw?e=rGG6Xk
 
 self.rect.left - player.sprite.rect.centerX + screen_width / 2, self.rect.top - player.sprite.rect.centerY + screenHeight / 2
