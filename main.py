@@ -33,9 +33,9 @@ blocks = pygame.sprite.Group()
 class Player(pygame.sprite.Sprite):
     def __init__(self,x,y,w,h,color):
         super().__init__()
-        self.image = pygame.Surface((w,h))
-        self.sprite = pygame.image.load('pot.png')
-        self.image.fill(color)
+        self.realimage = pygame.image.load('pot.png').convert_alpha()
+        self.originalimage = pygame.transform.scale(self.realimage,(80,80))
+        self.image = self.originalimage
         self.rect = self.image.get_rect()
         self.rect.center = x,y
         
@@ -140,16 +140,15 @@ class Player(pygame.sprite.Sprite):
 
         
         self.physics()
-        screen.blit(self.sprite,[self.rect.x,self.rect.y])
-        gun.update(self.rect.centerx,self.rect.centery)
-        
+
+        screen.blit(self.image,[self.rect.left - self.rect.centerx + SCREENSIZE[0]/2,self.rect.top - self.rect.centery + SCREENSIZE[1]/2])
     
         
 class Gun(pygame.sprite.Sprite):
     def __init__(self,w,h):
         super().__init__()
-
-        self.original_image = pygame.image.load('Shotgun.png').convert_alpha()
+        self.realimage = pygame.image.load('Shotgun.png').convert_alpha()
+        self.original_image = pygame.transform.scale(self.realimage,(128,128))
         self.image = self.original_image
         self.rect = self.image.get_rect()
         self.rect.center = (10,10)
@@ -163,13 +162,13 @@ class Gun(pygame.sprite.Sprite):
     
       
     def update(self,px,py):
-        mx = pygame.mouse.get_pos()[0]
-        my = pygame.mouse.get_pos()[1]
+        mx = pygame.mouse.get_pos()[0] + player.sprite.rect.centerx - SCREENSIZE[0] / 2
+        my = pygame.mouse.get_pos()[1] + player.sprite.rect.centery - SCREENSIZE[1] / 2
         self.angle = math.atan2(my-py,mx-px)
 
         #print(f'x:{math.cos(self.angle)}, y:{math.sin(self.angle)}')
 
-        pos = ((px - 9 + math.cos(self.angle)*30),(py + math.sin(self.angle)*30))
+        pos = ((px + math.cos(self.angle)*80),(py + math.sin(self.angle)*80))
         deg = -math.degrees(self.angle)
         if (deg < -90 or deg > 90) and not self.flipped:
             self.original_image = pygame.transform.flip(self.original_image, False, True)
@@ -183,7 +182,8 @@ class Gun(pygame.sprite.Sprite):
 
         self.image = pygame.transform.rotate(self.original_image, deg)
         self.rect = self.image.get_rect(center = pos)
-        screen.blit(self.image,self.rect)
+        screen.blit(self.image, [self.rect.left - player.sprite.rect.centerx + SCREENSIZE[0] / 2,
+                                 self.rect.top - player.sprite.rect.centery + SCREENSIZE[1] / 2])
 
 
 class Blocks(pygame.sprite.Sprite):
@@ -192,10 +192,11 @@ class Blocks(pygame.sprite.Sprite):
         self.image = pygame.Surface((w,h))
         self.image.fill(color)
         self.rect = self.image.get_rect()
-        self.rect.center = (x,y)
+        self.rect.center = (x , y)
     
     def update(self):
-         screen.blit(self.image,[self.rect.x,self.rect.y])
+        screen.blit(self.image, [self.rect.left - player.sprite.rect.centerx + SCREENSIZE[0] / 2,
+                                 self.rect.top - player.sprite.rect.centery + SCREENSIZE[1] / 2])
         
 
 player.add(Player(500,0,50,32,BLUE))
@@ -215,12 +216,16 @@ while True:
 
         if event.type == pygame.VIDEORESIZE:
             SCREENSIZE = [event.w, event.h]
+
             screen = pygame.display.set_mode(SCREENSIZE, flags=pygame.RESIZABLE, vsync=1)
-            
+
     screen.fill(AQUA)
     blocks.update()
     player.update()
-
+    px, py = player.sprite.rect.center
+    cx, cy = px - SCREENSIZE[0], py - SCREENSIZE[1]
+    #print(px, py, cx, cy)
+    gun.update(px,py)
         
     
     
