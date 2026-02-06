@@ -3,9 +3,14 @@ import pygame,sys,math
 
 pygame.font.init()
 pygame.mixer.init()
+
+shotgun_shot = pygame.mixer.Sound('sounds/Shotgun_shot.mp3')
+shotgun_empty = pygame.mixer.Sound('sounds/Empty.mp3')
+
 pygame.mixer.set_num_channels(40)
 SCREENSIZE = [800,800]
 FPS = 60
+STATE = 'play'
 ##########COLORS##############
 RED = (255,0,0)
 GREEN = (0,177,64)
@@ -44,6 +49,7 @@ class Player(pygame.sprite.Sprite):
         self.velx = 0
         self.vely = 0
         self.touchingground = False
+        self.wasgrounded = False
         self.touchingwall = False
         self.touchingceiling = False
         self.friction = 1
@@ -80,30 +86,30 @@ class Player(pygame.sprite.Sprite):
                     self.vely = 0
                     self.touchingground = True
                     self.friction = 30
-                    print(self.friction)
+                    #print(self.friction)
                 elif self.vely < 0:
                     self.rect.top = sprite.rect.bottom
                     self.vely = 0
                     self.touchingceiling = True
                     self.friction = 30
-                    print(self.friction)
+                    #print(self.friction)
             gun.sprite.bullets = 2
 
         if self.velx > 0:
-            if self.velx <= 0.05:
+            if self.velx <= 0.03:
                 self.velx = 0
 
             else:
-                self.velx -= 0.05 * self.friction
-                if self.velx <= 0.05:
+                self.velx -= 0.03 * self.friction
+                if self.velx <= 0.03:
                     self.velx = 0
         if self.velx < 0:
-            if self.velx >= 0.05:
+            if self.velx >= 0.03:
                 self.velx = 0
 
             else:
-                self.velx += 0.05 * self.friction
-                if self.velx >= 0.05:
+                self.velx += 0.03 * self.friction
+                if self.velx >= 0.03:
                     self.velx = 0
   
     def update(self):
@@ -148,18 +154,23 @@ class Gun(pygame.sprite.Sprite):
     
     def shoot(self):
         self.bullets = self.bullets - 1
-        print(self.bullets)
+        #print(self.bullets)
         if self.bullets >= 0:
+            shotgun_shot.play()
+            if player.sprite.vely > 0:
+                player.sprite.vely = 0
+                print(player.sprite.vely)
             addvelx = -math.cos(self.angle)*10
             addvely = -math.sin(self.angle)*10
             player.sprite.add_vel(addvelx,addvely)
+        else:
+            shotgun_empty.play()
     
       
     def update(self,px,py):
         mx = pygame.mouse.get_pos()[0] + player.sprite.rect.centerx - SCREENSIZE[0] / 2
         my = pygame.mouse.get_pos()[1] + player.sprite.rect.centery - SCREENSIZE[1] / 2
         self.angle = math.atan2(my-py,mx-px)
-
         #print(f'x:{math.cos(self.angle)}, y:{math.sin(self.angle)}')
 
         pos = ((px + math.cos(self.angle)*80),(py + math.sin(self.angle)*80))
@@ -206,7 +217,7 @@ while True:
             sys.exit() 
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            gun.sprite.shoot()
+                gun.sprite.shoot()
 
         if event.type == pygame.VIDEORESIZE:
             SCREENSIZE = [event.w, event.h]
