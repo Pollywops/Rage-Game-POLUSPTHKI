@@ -60,7 +60,7 @@ level = load_from_json()
 class Player(pygame.sprite.Sprite):
     def __init__(self,x,y,w,h,color):
         super().__init__()
-        self.realimage = pygame.image.load('pot.png').convert_alpha()
+        self.realimage = pygame.image.load('textures/Pot.png').convert_alpha()
         self.originalimage = pygame.transform.scale(self.realimage,(60,60))
         self.image = self.originalimage
         self.rect = self.image.get_rect()
@@ -166,7 +166,7 @@ class Player(pygame.sprite.Sprite):
 class Gun(pygame.sprite.Sprite):
     def __init__(self,w,h):
         super().__init__()
-        self.realimage = pygame.image.load('Shotgun.png').convert_alpha()
+        self.realimage = pygame.image.load('textures/Shotgun.png').convert_alpha()
         self.original_image = pygame.transform.scale(self.realimage,(128,128))
         self.image = self.original_image
         self.rect = self.image.get_rect()
@@ -227,11 +227,14 @@ class Blocks(pygame.sprite.Sprite):
         
 player.add(Player(500,0,50,50,BLUE))
 gun.add(Gun(10,10))
+blocks.add(Blocks(400,700,1000,100,GREEN))
+blocks.add(Blocks(100,100,200,500,GREEN))
 
-for y,i in enumerate(level):
-    for x,j in enumerate(i):
-        if j == "X":
-            blocks.add(Blocks(x*64,y*64,64,64,GREEN))
+
+# for y,i in enumerate(level):
+#    for x,j in enumerate(i):
+ #       if j == "X":
+ #           blocks.add(Blocks(x*64,y*64,64,64,GREEN))
         # if j == "P":
         #     player.add(Player(x*64,y*64,50,50,BLUE))
 
