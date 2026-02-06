@@ -33,6 +33,28 @@ gun = pygame.sprite.GroupSingle()
 blocks = pygame.sprite.Group()
 
 
+def lines_to_matrix(lines):
+    matrix = []
+    for line in lines:
+        line = line.strip()
+        if line == "":
+            continue
+        matrix.append(line.split())
+    return matrix
+
+
+def load_from_json(path="level.json"):
+    try:
+        with open(path,"r",encoding="utf-8") as f:
+            data = json.load(f)
+        if "level" not in data:
+            return None
+        return lines_to_matrix(data["level"])
+    except:
+        return None
+
+level = load_from_json()
+
 
 
 class Player(pygame.sprite.Sprite):
@@ -203,11 +225,15 @@ class Blocks(pygame.sprite.Sprite):
         screen.blit(self.image, [self.rect.left - player.sprite.rect.centerx + SCREENSIZE[0] / 2,
                                  self.rect.top - player.sprite.rect.centery + SCREENSIZE[1] / 2])
         
-
-player.add(Player(500,0,50,32,BLUE))
+player.add(Player(500,0,50,50,BLUE))
 gun.add(Gun(10,10))
-blocks.add(Blocks(400,700,1000,100,GREEN))
-blocks.add(Blocks(100,100,200,500,GREEN))
+
+for y,i in enumerate(level):
+    for x,j in enumerate(i):
+        if j == "X":
+            blocks.add(Blocks(x*64,y*64,64,64,GREEN))
+        # if j == "P":
+        #     player.add(Player(x*64,y*64,50,50,BLUE))
 
 
 while True:
