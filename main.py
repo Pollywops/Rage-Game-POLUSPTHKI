@@ -1,6 +1,8 @@
 
 import pygame,sys,math
 import json
+from camera import Camera
+from player import Player
 
 pygame.font.init()
 pygame.mixer.init()
@@ -29,7 +31,7 @@ screen = pygame.display.set_mode(SCREENSIZE,flags=pygame.RESIZABLE, vsync=1)
 clock = pygame.time.Clock()
 bullet_type = 'NORMAL'
 
-player = pygame.sprite.GroupSingle()
+player_group = pygame.sprite.GroupSingle()
 gun = pygame.sprite.GroupSingle()
 blocks = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
@@ -55,105 +57,6 @@ def load_from_json(path="level.json"):
         return None
 
 level = load_from_json()
-
-class Camera:
-    def __init__(self, screen_size):
-        self.resize(screen_size)
-        self.offset = pygame.Vector2(0, 0)
-
-    def resize(self, screen_size):
-        self.screen_w, self.screen_h = screen_size
-
-    def update(self, target_rect):
-        self.offset.x = target_rect.centerx - self.screen_w / 2
-        self.offset.y = target_rect.centery - self.screen_h / 2
-
-    def apply_rect(self, rect):
-        # world -> screen
-        return rect.move(-self.offset.x, -self.offset.y)
-
-
-class Player(pygame.sprite.Sprite):
-    def __init__(self,x,y,w,h,color):
-        super().__init__()
-        self.realimage = pygame.image.load('textures/Pot.png').convert_alpha()
-        self.originalimage = pygame.transform.scale(self.realimage,(60,60))
-        self.image = self.originalimage
-        self.rect = self.image.get_rect()
-        self.rect.center = x,y
-        
-        self.centerx = x
-        self.centery = y
-        self.velx = 0
-        self.vely = 0
-        self.touchingground = False
-        self.wasgrounded = False
-        self.touchingwall = False
-        self.touchingceiling = False
-        self.friction = 1
-     
-     
-    def add_vel(self,x,y):
-        self.velx += x
-        self.vely += y
-     
-        
-    def physics(self):
-        self.touchingground = False
-        self.touchingwall = False
-        self.touchingceiling = False
-
-        self.vely += 0.4
-        self.friction = 1
-
-        self.rect.centerx += self.velx
-        for sprite in pygame.sprite.spritecollide(self,blocks,False):
-            if self.rect.colliderect(sprite.rect):
-                if self.velx > 0:
-                    self.rect.right = sprite.rect.left
-                    self.velx = 0
-                elif self.velx < 0:
-                    self.rect.left = sprite.rect.right
-                    self.velx = 0
-            gun.sprite.bullets = 2
-        self.rect.centery += self.vely
-        for sprite in pygame.sprite.spritecollide(self,blocks,False):
-            if self.rect.colliderect(sprite.rect):
-                if self.vely > 0:
-                    self.rect.bottom = sprite.rect.top
-                    self.vely = 0
-                    self.touchingground = True
-                    self.friction = 30
-                    #print(self.friction)
-                elif self.vely < 0:
-                    self.rect.top = sprite.rect.bottom
-                    self.vely = 0
-                    self.touchingceiling = True
-                    self.friction = 30
-            gun.sprite.bullets = 2
-
-        if self.velx > 0:
-            if self.velx <= 0.005:
-                self.velx = 0
-
-            else:
-                self.velx -= 0.03 * self.friction
-                if self.velx <= 0.03:
-                    self.velx = 0
-        if self.velx < 0:
-            if self.velx >= 0.005:
-                self.velx = 0
-
-            else:
-                self.velx += 0.03 * self.friction
-                if self.velx >= 0.03:
-                    self.velx = 0
-  
-    def update(self):
-        self.physics()
-
-        screen.blit(self.image,[self.rect.left - self.rect.centerx + SCREENSIZE[0]/2,self.rect.top - self.rect.centery + SCREENSIZE[1]/2])
-    
         
 class Gun(pygame.sprite.Sprite):
     def __init__(self,w,h):
@@ -177,19 +80,19 @@ class Gun(pygame.sprite.Sprite):
         if self.bullets > 0:
             self.bullets = self.bullets - 1
             shotgun_shot.play()
-            if player.sprite.vely > 0:
-                player.sprite.vely = 0
-                print(player.sprite.vely)
+            if player.vely > 0:
+                player.vely = 0
+                print(player.vely)
             addvelx = -math.cos(self.angle)*10*self.bullet_strength
             addvely = -math.sin(self.angle)*10*self.bullet_strength
-            player.sprite.add_vel(addvelx,addvely)
+            player.add_vel(addvelx,addvely)
         else:
             shotgun_empty.play()
     
       
     def update(self,px,py):
-        mx = pygame.mouse.get_pos()[0] + player.sprite.rect.centerx - SCREENSIZE[0] / 2
-        my = pygame.mouse.get_pos()[1] + player.sprite.rect.centery - SCREENSIZE[1] / 2
+        mx = pygame.mouse.get_pos()[0] + player.rect.centerx - SCREENSIZE[0] / 2
+        my = pygame.mouse.get_pos()[1] + player.rect.centery - SCREENSIZE[1] / 2
         self.angle = math.atan2(my-py,mx-px)
         #print(f'x:{math.cos(self.angle)}, y:{math.sin(self.angle)}')
 
@@ -207,8 +110,7 @@ class Gun(pygame.sprite.Sprite):
 
         self.image = pygame.transform.rotate(self.original_image, deg)
         self.rect = self.image.get_rect(center = pos)
-        screen.blit(self.image, [self.rect.left - player.sprite.rect.centerx + SCREENSIZE[0] / 2,
-                                 self.rect.top - player.sprite.rect.centery + SCREENSIZE[1] / 2])
+        screen.blit(self.image, cam.apply_rect(self.rect))
 
 
 class Blocks(pygame.sprite.Sprite):
@@ -218,10 +120,10 @@ class Blocks(pygame.sprite.Sprite):
         self.image.fill(color)
         self.rect = self.image.get_rect()
         self.rect.center = (x , y)
-    
     def update(self):
-        screen.blit(self.image, [self.rect.left - player.sprite.rect.centerx + SCREENSIZE[0] / 2,
-                                 self.rect.top - player.sprite.rect.centery + SCREENSIZE[1] / 2])
+        pass
+    def draw(self):
+        screen.blit(self.image, cam.apply_rect(self.rect))
 
 class Button(pygame.sprite.Sprite):
     def __init__(self,x,y,w,h,Transparent, color,fontsize, fontoffsetX, fontoffsetY, text):
@@ -236,13 +138,16 @@ class Button(pygame.sprite.Sprite):
         self.Transparent = Transparent
         self.text = text
     def update(self):
+        pass
+    def draw(self):
         if not self.Transparent:
             screen.blit(self.image, [self.rect.topleft,self.rect.topleft])
         text_surface = self.font.render(self.text, True, BLACK)
         screen.blit(text_surface, [self.rect.topleft[0] + self.fontoffsetX, self.rect.topleft[1]])
 
 cam = Camera(SCREENSIZE)
-player.add(Player(500,0,50,50,BLUE))
+player_group.add(Player(500,0,50,50,BLUE))
+player = player_group.sprite
 gun.add(Gun(10,10))
 blocks.add(Blocks(400,700,1000,100,GREEN))
 blocks.add(Blocks(100,100,200,500,GREEN))
@@ -280,18 +185,28 @@ while True:
                     gun.sprite.bullet_type = 'SUPER'
         if event.type == pygame.VIDEORESIZE:
             SCREENSIZE = [event.w, event.h]
-
+            cam.resize(SCREENSIZE)
             screen = pygame.display.set_mode(SCREENSIZE, flags=pygame.RESIZABLE, vsync=1)
 
 
-    cam.update(player.sprite.rect)
+    cam.update(player.rect)
+
     screen.fill(AQUA)
+
     blocks.update()
-    player.update()
+    for b in blocks:
+        b.update()
+        b.draw()
+    player.update(blocks, gun)
+    player.draw(screen, cam)
+
     button1.text = 'BULLETS: ' + str(gun.sprite.bullets)
     button2.text = 'BULLET TYPE: ' + str(gun.sprite.bullet_type)
-    buttons.update()
-    px, py = player.sprite.rect.center
+    for b in buttons:
+        b.update()
+        b.draw()
+
+    px, py = player.rect.center
     cx, cy = px - SCREENSIZE[0], py - SCREENSIZE[1]
     #print(px, py, cx, cy)
     gun.update(px,py)
