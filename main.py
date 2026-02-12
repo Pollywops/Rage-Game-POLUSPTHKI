@@ -3,6 +3,7 @@ import json
 from camera import Camera
 from player import Player
 from gun import Gun
+from hook import Hook
 
 pygame.font.init()
 pygame.mixer.init()
@@ -105,6 +106,7 @@ button1 = Button(500, 50, 175, 30, True, GREEN,
                  30, 5,fontoffsetY= -3,text= 'BULLETS:  ' + str(gun.bullets))
 button2 = Button(500,100, 175, 30, True, GREEN,
                  30, 5,fontoffsetY= -3,text= 'BULLET TYPE: ' + str(gun.bullet_type))
+hook = Hook()
 
 buttons.add(button1)
 buttons.add(button2)
@@ -147,7 +149,7 @@ while True:
 
     player.update(blocks, gun)
     gun.update(player, cam)
-
+    hook.update(gun, blocks)
 
     for b in blocks:
         b.update()
@@ -163,6 +165,7 @@ while True:
 
     gun.draw(screen, cam)
     player.draw(screen, cam)
+    hook.draw(screen, cam)
 
     pygame.display.flip()
 

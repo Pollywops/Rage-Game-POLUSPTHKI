@@ -41,8 +41,8 @@ class Gun(pygame.sprite.Sprite):
         mx,my = cam.apply_mouse()
         self.angle = math.atan2(my - player.rect.centery, mx - player.rect.centerx)
         # print(f'x:{math.cos(self.angle)}, y:{math.sin(self.angle)}')
-
-        self.pos = ((player.rect.centerx + math.cos(self.angle) * 80), (player.rect.centery + math.sin(self.angle) * 80))
+        self.vx, self.vy = (player.rect.centerx + math.cos(self.angle) * 80),(player.rect.centery + math.sin(self.angle) * 80)
+        self.pos = (self.vx, self.vy)
         self.deg = -math.degrees(self.angle)
         if (self.deg < -90 or self.deg > 90) and not self.flipped:
             self.original_image = pygame.transform.flip(self.original_image, False, True)
