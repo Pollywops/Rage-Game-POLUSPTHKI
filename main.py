@@ -6,6 +6,8 @@ from player import Player
 from gun import Gun
 from hook import Hook
 
+# VARIABLES
+
 pygame.font.init()
 pygame.mixer.init()
 
@@ -27,6 +29,8 @@ BLACK = (30,30,30)
 GRAY = (128,128,128)
 ##############################
 
+
+# hier worden de pygame window en clock aangemaakt, en de groepen voor de player, gun, blocks en buttons.
 screen = pygame.display.set_mode(SCREENSIZE,flags=pygame.RESIZABLE, vsync=1)
 clock = pygame.time.Clock()
 
@@ -34,6 +38,8 @@ player_group = pygame.sprite.GroupSingle()
 gun_group = pygame.sprite.GroupSingle()
 blocks = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
+
+# FUNCTIONS
 
 # deze functie zet de lijnen uit het json bestand om in een matrix, zodat deze kan worden gebruikt om de blokken en de player te maken
 def lines_to_matrix(lines):
@@ -57,6 +63,8 @@ def load_from_json(path="level.json"):
         return None
 
 level = load_from_json()
+
+#CLASSES
 
 # deze class maakt de blokken aan deze kunnen worden geupdate en getekend op het scherm
 class Blocks(pygame.sprite.Sprite):
@@ -117,6 +125,8 @@ class Button(pygame.sprite.Sprite):
         text_surface = self.font.render(self.text, True, BLACK)
         screen.blit(text_surface, [self.rect.topleft[0] + self.fontoffsetX, self.rect.topleft[1]])
 
+#VARIABLES 2
+
 # hier zijn de player, gun, blocks, buttons en stopwatch aangemaakt, en de camera is ingesteld om te volgen op de player
 cam = Camera(SCREENSIZE)
 
@@ -151,6 +161,8 @@ buttons.add(button3)
  #           blocks.add(Blocks(x*64,y*64,64,64,GREEN))
         # if j == "P":
         #     player.add(Player(x*64,y*64,50,50,BLUE))
+
+#WHILE LOOP
 
 # dit is de grote game loop, hier worden alle events afgehandeld, het scherm wordt geupdate en getekend.
 while True:
