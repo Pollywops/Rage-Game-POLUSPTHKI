@@ -35,6 +35,43 @@ gun_group = pygame.sprite.GroupSingle()
 blocks = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
 
+# deze functie zet de lijnen uit het json bestand om in een matrix, zodat deze kan worden gebruikt om de blokken en de player te maken
+def lines_to_matrix(lines):
+    matrix = []
+    for line in lines:
+        line = line.strip()
+        if line == "":
+            continue
+        matrix.append(line.split())
+    return matrix
+
+# deze functie laadt het level uit het json bestand, en zet het om in een matrix, zodat deze kan worden gebruikt om de blokken en de player te maken.
+def load_from_json(path="level.json"):
+    try:
+        with open(path,"r",encoding="utf-8") as f:
+            data = json.load(f)
+        if "level" not in data:
+            return None
+        return lines_to_matrix(data["level"])
+    except:
+        return None
+
+level = load_from_json()
+
+# deze class maakt de blokken aan deze kunnen worden geupdate en getekend op het scherm
+class Blocks(pygame.sprite.Sprite):
+    def __init__(self,x,y,w,h,color):
+        super().__init__()
+        self.image = pygame.Surface((w,h))
+        self.image.fill(color)
+        self.rect = self.image.get_rect()
+        self.rect.center = (x , y)
+    def update(self):
+        pass
+    def draw(self):
+        screen.blit(self.image, cam.apply_rect(self.rect))
+
+# dit is de class om de stopwatch te maken, deze kan worden gestart, gereset en de tijd kan worden opgevraagd in seconden of in een string in het formaat mm:ss.ms
 class Stopwatch:
     def __init__(self):
         self.start_time = None
@@ -58,42 +95,8 @@ class Stopwatch:
         milliseconds = int((elapsed % 1) * 100)
         return f"{minutes:02d}:{seconds:02d}.{milliseconds:02d}"
 
-def lines_to_matrix(lines):
-    matrix = []
-    for line in lines:
-        line = line.strip()
-        if line == "":
-            continue
-        matrix.append(line.split())
-    return matrix
-
-
-def load_from_json(path="level.json"):
-    try:
-        with open(path,"r",encoding="utf-8") as f:
-            data = json.load(f)
-        if "level" not in data:
-            return None
-        return lines_to_matrix(data["level"])
-    except:
-        return None
-
-level = load_from_json()
-
-
-class Blocks(pygame.sprite.Sprite):
-    def __init__(self,x,y,w,h,color):
-        super().__init__()
-        self.image = pygame.Surface((w,h))
-        self.image.fill(color)
-        self.rect = self.image.get_rect()
-        self.rect.center = (x , y)
-    def update(self):
-        pass
-    def draw(self):
-        screen.blit(self.image, cam.apply_rect(self.rect))
-
-
+# deze class maakt de knoppen aan, deze kunnen worden geupdate en getekend op het scherm. 
+# De knoppen kunnen ook transparant zijn, en er kan tekst op worden gezet met een bepaalde fontgrootte en offset.
 class Button(pygame.sprite.Sprite):
     def __init__(self,x,y,w,h,Transparent, color,fontsize, fontoffsetX, fontoffsetY, text):
         super().__init__()
@@ -114,7 +117,7 @@ class Button(pygame.sprite.Sprite):
         text_surface = self.font.render(self.text, True, BLACK)
         screen.blit(text_surface, [self.rect.topleft[0] + self.fontoffsetX, self.rect.topleft[1]])
 
-
+# hier zijn de player, gun, blocks, buttons en stopwatch aangemaakt, en de camera is ingesteld om te volgen op de player
 cam = Camera(SCREENSIZE)
 
 player_group.add(Player(500,0,50,50,BLUE))
@@ -149,7 +152,7 @@ buttons.add(button3)
         # if j == "P":
         #     player.add(Player(x*64,y*64,50,50,BLUE))
 
-
+# dit is de grote game loop, hier worden alle events afgehandeld, het scherm wordt geupdate en getekend.
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -167,8 +170,9 @@ while True:
                 else:
                     gun.bullet_type = 'SUPER'
                     gun.bullets = 2
-                if event.key in (pygame.K_1, pygame.K_KP1):
-                    stopwatch.reset()
+                
+            if event.key == pygame.K_SPACE:
+                 stopwatch.reset()
 
 
         if event.type == pygame.VIDEORESIZE:
@@ -176,6 +180,7 @@ while True:
             cam.resize(SCREENSIZE)
             screen = pygame.display.set_mode(SCREENSIZE, flags=pygame.RESIZABLE, vsync=1)
 
+# hier worden alle sprites geupdate en getekend op het scherm, en de tijd wordt geupdate op de stopwatch
     screen.fill(WHITE)
 
     cam.update_center(player.rect)
@@ -188,7 +193,7 @@ while True:
         b.update()
         b.draw()
 
-
+# hier worden de knoppen geupdate en getekend op het scherm, en de tekst wordt geupdate met de huidige hoeveelheid kogels, het type kogel en de tijd op de stopwatch
     button1.text = 'BULLETS: ' + str(gun.bullets)
     button2.text = 'BULLET TYPE: ' + str(gun.bullet_type)
     button3.text = 'TIME: ' + stopwatch.get_formatted_time()
