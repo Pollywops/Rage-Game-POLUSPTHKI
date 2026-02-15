@@ -1,5 +1,6 @@
 import pygame,sys
 import json
+import time
 from camera import Camera
 from player import Player
 from gun import Gun
@@ -33,6 +34,29 @@ player_group = pygame.sprite.GroupSingle()
 gun_group = pygame.sprite.GroupSingle()
 blocks = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
+
+class Stopwatch:
+    def __init__(self):
+        self.start_time = None
+    
+    def start(self):
+        if self.start_time is None:
+            self.start_time = time.time()
+    
+    def get_time(self):
+        if self.start_time is None:
+            return 0
+        return time.time() - self.start_time
+    
+    def reset(self):
+        self.start_time = time.time()
+    
+    def get_formatted_time(self):
+        elapsed = self.get_time()
+        minutes = int(elapsed // 60)
+        seconds = int(elapsed % 60)
+        milliseconds = int((elapsed % 1) * 100)
+        return f"{minutes:02d}:{seconds:02d}.{milliseconds:02d}"
 
 def lines_to_matrix(lines):
     matrix = []
@@ -106,10 +130,16 @@ button1 = Button(500, 50, 175, 30, True, GREEN,
                  30, 5,fontoffsetY= -3,text= 'BULLETS:  ' + str(gun.bullets))
 button2 = Button(500,100, 175, 30, True, GREEN,
                  30, 5,fontoffsetY= -3,text= 'BULLET TYPE: ' + str(gun.bullet_type))
+stopwatch = Stopwatch()
+stopwatch.start()
+
+button3 = Button(500,150, 175, 30, True, GREEN,
+                 30, 5,fontoffsetY= -3,text= 'TIME: 00:00.00')
 hook = Hook()
 
 buttons.add(button1)
 buttons.add(button2)
+buttons.add(button3)
 
 
 # for y,i in enumerate(level):
@@ -137,6 +167,9 @@ while True:
                 else:
                     gun.bullet_type = 'SUPER'
                     gun.bullets = 2
+                if event.key in (pygame.K_1, pygame.K_KP1):
+                    stopwatch.reset()
+
 
         if event.type == pygame.VIDEORESIZE:
             SCREENSIZE = [event.w, event.h]
@@ -158,6 +191,7 @@ while True:
 
     button1.text = 'BULLETS: ' + str(gun.bullets)
     button2.text = 'BULLET TYPE: ' + str(gun.bullet_type)
+    button3.text = 'TIME: ' + stopwatch.get_formatted_time()
     for b in buttons:
         b.update()
         b.draw()
