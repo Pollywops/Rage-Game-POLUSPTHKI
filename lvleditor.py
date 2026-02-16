@@ -1,6 +1,10 @@
 import pygame,sys,math,json,os
 from gamedata import guns
 
+# dit is de level editor, hier kan je levels maken en opslaan in een json bestand. Je kan ook levels laden vanuit een json bestand. 
+# De levels worden opgeslagen als een matrix van strings, waarbij elke string een type blok vertegenwoordigt. De textures voor de blokken worden geladen uit de textures map. 
+# Je kan blokken plaatsen door te klikken op het scherm, en je kan blokken verwijderen door op z te drukken. 
+# Je kan ook scrollen door het scherm met de pijltjestoetsen.
 pygame.font.init()
 pygame.mixer.init()
 pygame.mixer.set_num_channels(40)
