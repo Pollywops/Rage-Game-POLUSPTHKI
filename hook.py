@@ -9,18 +9,14 @@ class Hook(pygame.sprite.Sprite):
         self.hooking = False
     def update(self, gun, blocks):
         self.rect.centerx, self.rect.centery = gun.rect.center
-        self.vx, self.vy = gun.vx, gun.vy
+        self.angle = gun.angle
         self.transformed_image = pygame.transform.rotate(self.surface, gun.deg)
         if self.hooking:
-            for sprite in pygame.sprite.spritecollide(self, blocks, False):
-                if self.rect.colliderect(sprite.rect):
-                    self.hooking = False
-
-
-    def hook(self):
-        self.rect.centerx += self.vx
-        self.rect.centery += self.vy
+            self.pro.update()
+    def hook(self, projectile):
+        self.pro = projectile.start(self.rect.centerx, self.rect.centery, 10 ,10, self.angle, 1)
         self.hooking = True
-
     def draw(self, screen, cam):
         screen.blit(self.transformed_image, cam.apply_rect(self.rect))
+        if self.hooking:
+            self.pro.draw(screen, cam)
