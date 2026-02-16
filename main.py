@@ -179,12 +179,14 @@ while True:
                 if gun.bullet_type == 'SUPER':
                     gun.bullet_type = 'NORMAL'
                     gun.bullets = 2
+                    print("NORMAL BULLET ACTIVATED!")
                 else:
                     gun.bullet_type = 'SUPER'
                     gun.bullets = 2
-                
-            if event.key == pygame.K_SPACE:
+                    print("SUPER BULLET ACTIVATED!")
+            if event.key == pygame.K_t:
                  stopwatch.reset()
+                 
 
 
         if event.type == pygame.VIDEORESIZE:

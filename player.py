@@ -82,3 +82,4 @@ class Player(pygame.sprite.Sprite):
 
     def draw(self, screen, cam):
         screen.blit(self.image, cam.apply_rect(self.rect))
+    
