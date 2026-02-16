@@ -186,6 +186,7 @@ while True:
                     print("SUPER BULLET ACTIVATED!")
             if event.key == pygame.K_t:
                  stopwatch.reset()
+                 player.reset_position()
                  
 
 

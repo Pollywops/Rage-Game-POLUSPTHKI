@@ -11,6 +11,7 @@ class Player(pygame.sprite.Sprite):
         self.image = self.originalimage
         self.rect = self.image.get_rect()
         self.rect.center = x, y
+        self.start_pos = (x, y)
 
         self.centerx = x
         self.centery = y
@@ -82,4 +83,9 @@ class Player(pygame.sprite.Sprite):
 
     def draw(self, screen, cam):
         screen.blit(self.image, cam.apply_rect(self.rect))
+
+    def reset_position(self):
+        self.rect.center = self.start_pos
+        self.velx = 0
+        self.vely = 0
     
