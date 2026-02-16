@@ -6,14 +6,20 @@ from camera import Camera
 from player import Player
 from gun import Gun
 from hook import Hook
+import os
 
 # VARIABLES
 
 pygame.font.init()
 pygame.mixer.init()
 
-font = pygame.font.SysFont("Arial", 72)
-small_font = pygame.font.SysFont("Arial", 36)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PIXELTYPE_PATH = os.path.join(BASE_DIR, "Fonts", "Pixeltype.ttf")
+PIXELTYPE_BIG = pygame.font.Font(PIXELTYPE_PATH, 150)
+PIXELTYPE_SMALL = pygame.font.Font(PIXELTYPE_PATH, 36)
+
+fontArial = pygame.font.SysFont("Arial", 72)
+small_fontArial = pygame.font.SysFont("Arial", 36)
 
 pygame.mixer.set_num_channels(40)
 SCREENSIZE = [800,800]
@@ -70,11 +76,11 @@ def load_from_json(path="level.json"):
 def draw_menu(screen):
     screen.fill((255, 255, 255))
 
-    title = font.render("Rage Game", True, (0, 0, 0))
-    hint1 = small_font.render("ENTER = Play", True, (0, 0, 0))
-    hint2 = small_font.render("ESC = Quit", True, (0, 0, 0))
+    title = PIXELTYPE_BIG.render("Rage Game", True, (0, 0, 0))
+    hint1 = PIXELTYPE_SMALL.render("ENTER = Play", True, (0, 0, 0))
+    hint2 = PIXELTYPE_SMALL.render("ESC = Quit", True, (0, 0, 0))
 
-    screen.blit(title, title.get_rect(center=(screen.get_width()//2, 250)))
+    screen.blit(title, title.get_rect(center=(screen.get_width()//2, 120)))
     screen.blit(hint1, hint1.get_rect(center=(screen.get_width()//2, 360)))
     screen.blit(hint2, hint2.get_rect(center=(screen.get_width()//2, 410)))
 
