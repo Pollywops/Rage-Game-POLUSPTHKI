@@ -47,6 +47,7 @@ clock = pygame.time.Clock()
 
 player_group = pygame.sprite.GroupSingle()
 gun_group = pygame.sprite.GroupSingle()
+projectiles = pygame.sprite.Group()
 blocks = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
 
@@ -150,13 +151,6 @@ class Button(pygame.sprite.Sprite):
 class Projectile(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = None
-        self.transformed_image = None
-        # self.rect = None
-        # # self.rect.centerx = None
-        # self.rect.centery = None
-        self.angle = None
-        self.speed = None
     def start(self, x, y, w ,h, angle, speed):
         self.image = pygame.Surface((w, h))
         self.transformed_image = pygame.transform.rotate(self.image, -math.degrees(angle))
@@ -201,8 +195,7 @@ stopwatch.start()
 
 button3 = Button(500,150, 175, 30, True, GREEN,
                  30, 5,fontoffsetY= -3,text= 'TIME: 00:00.00')
-# hook = Hook()
-# pro1 = Projectile()
+hook = Hook()
 
 buttons.add(button1)
 buttons.add(button2)
@@ -263,9 +256,9 @@ while True:
                     stopwatch.reset()
                     player.reset_position()
                 elif event.key == pygame.K_h:
-                    hook.hook()
+                    hook.hook(Projectile())
 
-    # Updat en draw
+    #draw
     if state == "menu":
         draw_menu(screen)
 
@@ -276,7 +269,7 @@ while True:
 
         player.update(blocks, gun)
         gun.update(player, cam)
-        # hook.update(gun, pro1)
+        hook.update(gun)
 
         for b in blocks:
             b.update()
@@ -292,7 +285,7 @@ while True:
 
         gun.draw(screen, cam)
         player.draw(screen, cam)
-        # hook.draw(screen, cam)
+        hook.draw(screen, cam)
 
     pygame.display.flip()
     clock.tick(FPS)
