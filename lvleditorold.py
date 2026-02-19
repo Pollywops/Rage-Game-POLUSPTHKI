@@ -4,8 +4,9 @@ import pygame,sys,math,json,os
 # De levels worden opgeslagen als een matrix van strings, waarbij elke string een type blok vertegenwoordigt. De textures voor de blokken worden geladen uit de textures map. 
 # Je kan blokken plaatsen door te klikken op het scherm, en je kan blokken verwijderen door op z te drukken. 
 # Je kan ook scrollen door het scherm met de pijltjestoetsen.
+pygame.init()
 pygame.font.init()
-
+pygame.mixer.set_num_channels(40)
 SCREENSIZE = [800,800]
 FPS = 60
 
@@ -38,100 +39,103 @@ blockorder = []
 files = sorted([f for f in os.listdir('textures') if f.lower().endswith('.png')])
 textures = [os.path.join("textures", f) for f in files]
 
-# preload surfaces
-tile_surfaces = [
-    pygame.transform.scale(pygame.image.load(p).convert_alpha(), (grid_size, grid_size))
-    for p in textures
-]
-
-placed = {}  # (gx,gy) -> Blocks sprite
-
-
 tile_map = {}
-EMPTY = '0'
 
 # textures = ['textures/Aarde_Links','textures/Aarde_Midden.png','textures/Aarde_rechts.png','textures/Grasblok.png'
 #             ]
 
 
 class Blocks(pygame.sprite.Sprite):
-    def __init__(self, x, y, gx, gy, tile_id):
+    def __init__(self,x,y,gx,gy,w,h,tex,type,color):
         super().__init__()
-        self.image = tile_surfaces[tile_id]
-        self.rect = self.image.get_rect(topleft=(x, y))
+ 
+        self.texture = pygame.image.load(tex)
+        self.image = pygame.transform.scale(self.texture,(w,h))
+
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
         self.gridx = gx
         self.gridy = gy
-        self.type = tile_id  # blijft je ID
-
-    def update(self, offsetx, offsety):
-        screen.blit(self.image, (self.rect.x - offsetx, self.rect.y - offsety))
-
+        self.type = type
 
     def update(self,offsetx,offsety):
         screen.blit(self.image, (self.rect.x-offsetx,self.rect.y-offsety))
 
+def find_matrix_size():
+    if len(blocks.sprites()) == 0:
+        return [0,0]
+    max_x = 0
+    max_y = 0
+    for i in blocks.sprites():
+        if i.gridx > max_x:
+            max_x = i.gridx
+        if i.gridy > max_y:
+            max_y = i.gridy
+    return [max_x,max_y]
+
+def make_matrix():
+    matrix = []
+    for y in range(find_matrix_size()[1]+1):
+        row = []
+        for x in range(find_matrix_size()[0]+1):
+            row.append(" ")
+        matrix.append(row)
+    return matrix
+
+def save_lvl(matrix):
+    for block in blocks.sprites():
+        matrix[block.gridy][block.gridx] = f"{block.type}"
+    return matrix
+
+
+
+
 def save_to_json(matrix, path="level.json"):
-    lines = ["".join(row) for row in matrix]          # <-- belangrijk
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump({"level": lines}, f, indent=0)
+    data = {"level": matrix}
+    with open(path,"w",encoding="utf-8") as f:
+        json.dump(data,f,separators=(",",":"),indent=2)
+    
+
+
 
 def load_from_json(path="level.json"):
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path,"r",encoding="utf-8") as f:
             data = json.load(f)
-        lines = data.get("level", None)
-        if lines is None:
+        if "level" not in data:
             return None
-        # lines -> matrix
-        return [line.split() for line in lines]
+        return data["level"]
     except:
         return None
+
+
 
 tiledata = load_from_json("tiledata.json")
 
 def build_blocks_from_matrix(matrix):
-    placed.clear()
     if matrix is None:
         return
     blocks.empty()
-    tile_map.clear()
+    blockorder.clear()
+
     for y, row in enumerate(matrix):
         for x, val in enumerate(row):
-            if val == EMPTY:
+            if val == " ":
                 continue
-            if not val.isdigit():
+
+            # accepteer alleen digits
+            if isinstance(val, str) and not val.isdigit():
                 continue
+
             tile_id = int(val)
             if tile_id < 0 or tile_id >= len(textures):
                 continue
-            b = Blocks(x * grid_size, y * grid_size, x, y, tile_id)
+
+            b = Blocks(x*grid_size, y*grid_size, x, y,
+                       grid_size, grid_size, textures[tile_id], tile_id, GREEN)
             blocks.add(b)
             blockorder.append(b)
-            placed[(x, y)] = b
-
-
-def make_matrix():
-    max_x, max_y = find_matrix_size()
-    matrix = []
-    for y in range(max_y + 1):
-        row = []
-        for x in range(max_x + 1):
-            row.append(EMPTY)
-        matrix.append(row)
-    return matrix
-
-def find_matrix_size():
-    if not placed:
-        return [0, 0]
-    max_x = max(gx for gx, _ in placed.keys())
-    max_y = max(gy for _, gy in placed.keys())
-    return [max_x, max_y]
-
-def save_lvl(matrix):
-    for (gx, gy), block in placed.items():
-        matrix[gy][gx] = str(block.type)
-    return matrix
-
 
 
 def print_lvl(matrix):
@@ -139,42 +143,13 @@ def print_lvl(matrix):
         print(" ".join(row))
     print()
 
-def set_tile(gx, gy, tile_id):
-    key = (gx, gy)
-    old = placed.get(key)
-
-    # als dezelfde tile er al staat: niks doen
-    if old and old.type == tile_id:
-        return
-
-    # oude tile eruit (geen overlap!)
-    if old:
-        blocks.remove(old)
-        try:
-            blockorder.remove(old)
-        except ValueError:
-            pass
-
-    b = Blocks(gx * grid_size, gy * grid_size, gx, gy, tile_id)
-    blocks.add(b)
-    placed[key] = b
-    blockorder.append(b)
-
-def erase_tile(gx, gy):
-    key = (gx, gy)
-    old = placed.pop(key, None)
-    if old:
-        blocks.remove(old)
-        try:
-            blockorder.remove(old)
-        except ValueError:
-            pass
-
-
 tiledata = load_from_json("tiledata.json")
+
 
 loaded = load_from_json("levels/level.json")
 build_blocks_from_matrix(loaded)
+
+
 
 while True:
     for event in pygame.event.get():
@@ -183,21 +158,16 @@ while True:
             sys.exit()
         if event.type == pygame.MOUSEBUTTONDOWN:
             mousepos = pygame.mouse.get_pos()
-            gen_mousepos = (mousepos[0] + offsetx, mousepos[1] + offsety)
-            gridx, gridy = gen_mousepos[0] // grid_size, gen_mousepos[1] // grid_size
-
-            if event.button == 1:  # left click
-                set_tile(gridx, gridy, selected_block)
-            elif event.button == 3:  # right click
-                erase_tile(gridx, gridy)
-
+            gen_mousepos = (mousepos[0]+offsetx,mousepos[1]+offsety)
+            gridx,gridy = gen_mousepos[0]//grid_size,gen_mousepos[1]//grid_size
+            b = Blocks(gridx*grid_size,gridy*grid_size,gridx,gridy,grid_size,grid_size,textures[selected_block],selected_block,GREEN)
+            blocks.add(b)
+            blockorder.append(b)
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_z:
-                if blockorder:
-                    last = blockorder.pop()
-                    blocks.remove(last)
-                    placed.pop((last.gridx, last.gridy), None)
-
+                if len(blockorder) > 0:
+                    blocks.remove(blockorder.pop())
+                    
             if event.key == pygame.K_1:
                 selected_block = (selected_block + 1) % len(textures)
 
