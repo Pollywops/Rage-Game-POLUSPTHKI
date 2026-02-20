@@ -1,12 +1,9 @@
 import pygame
-import os
-
-BASE_DIR = os.path.dirname(__file__)
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, w, h, color):
         super().__init__()
-        self.realimage = pygame.image.load(os.path.join(BASE_DIR, 'textures', 'Pot.png')).convert_alpha()
+        self.realimage = pygame.image.load('textures/Pot.png').convert_alpha()
         self.originalimage = pygame.transform.scale(self.realimage, (32, 32))
         self.image = self.originalimage
         self.rect = self.image.get_rect()

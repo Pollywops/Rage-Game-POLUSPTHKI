@@ -7,31 +7,25 @@ from player import Player
 from gun import Gun
 from hook import Hook
 import os
-# VARIABLES
 
 pygame.font.init()
 pygame.mixer.init()
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PIXELTYPE_PATH = os.path.join(BASE_DIR, "Fonts", "Pixeltype.ttf")
-PIXELTYPE_BIG = pygame.font.Font(PIXELTYPE_PATH, 150)
-PIXELTYPE_SMALL = pygame.font.Font(PIXELTYPE_PATH, 36)
+font_klein = pygame.font.Font('Fonts/Pixeltype.ttf', 50)
 
 fontArial = pygame.font.SysFont("Arial", 72)
-small_fontArial = pygame.font.SysFont("Arial", 36)
+
 
 pygame.mixer.set_num_channels(40)
 SCREENSIZE = [800,800]
+EMPTY = 0
 FPS = 60
 pygame.font.get_fonts()
 state = "menu"
 
-LEVEL_DIR = os.path.join(BASE_DIR, "levels")
-os.makedirs(LEVEL_DIR, exist_ok=True)
-
-level_files = sorted([f for f in os.listdir(LEVEL_DIR) if f.lower().endswith(".json")])
-selected_level_idx = 0
-selected_level_path = os.path.join(LEVEL_DIR, level_files[selected_level_idx]) if level_files else None
+level_files = sorted([f for f in os.listdir("levels") if f.lower().endswith(".json")])
+level_id = 0
+huidig_level = f"levels/{level_files[level_id]}"
 
 ##########COLORS##############
 RED = (255,0,0)
@@ -50,23 +44,16 @@ GRAY = (128,128,128)
 # hier worden de pygame window en clock aangemaakt, en de groepen voor de player, gun, blocks en buttons.
 screen = pygame.display.set_mode(SCREENSIZE,flags=pygame.RESIZABLE, vsync=1)
 clock = pygame.time.Clock()
-
-
-
 player_group = pygame.sprite.GroupSingle()
 gun_group = pygame.sprite.GroupSingle()
 projectiles = pygame.sprite.Group()
 blocks = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
 
-# FUNCTIONS
-
 grid_size = 32
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TEXTURE_DIR = os.path.join(BASE_DIR, "textures")
 
-files = sorted([f for f in os.listdir(TEXTURE_DIR) if f.lower().endswith(".png")])
-texture_paths = [os.path.join(TEXTURE_DIR, f) for f in files]
+texture_files = sorted([f for f in os.listdir("textures") if f.lower().endswith(".png")])
+texture_paths = [f"textures/{f}" for f in texture_files]
 
 tile_surfaces = [
     pygame.transform.scale(pygame.image.load(p).convert_alpha(), (grid_size, grid_size))
@@ -82,7 +69,6 @@ def load_level_matrix(path):
         return data.get("level")
     except:
         return None
-EMPTY = 0
 
 def build_blocks_from_matrix(matrix):
     blocks.empty()
@@ -103,23 +89,23 @@ def build_blocks_from_matrix(matrix):
 def draw_menu(screen):
     screen.fill((255, 255, 255))
 
-    title = PIXELTYPE_BIG.render("Rage Game", True, (0, 0, 0))
-    hint1 = PIXELTYPE_SMALL.render("ENTER = Play", True, (0, 0, 0))
-    hint2 = PIXELTYPE_SMALL.render("ESC = Quit", True, (0, 0, 0))
+    title = font_klein.render("Rage Game", True, (0, 0, 0))
+    hint1 = font_klein.render("ENTER = Play", True, (0, 0, 0))
+    hint2 = font_klein.render("ESC = Quit", True, (0, 0, 0))
 
     screen.blit(title, title.get_rect(center=(screen.get_width()//2, 120)))
     screen.blit(hint1, hint1.get_rect(center=(screen.get_width()//2, 360)))
     screen.blit(hint2, hint2.get_rect(center=(screen.get_width()//2, 410)))
 
     if level_files:
-        lvl_text = PIXELTYPE_SMALL.render(f"Level: {level_files[selected_level_idx]}", True, (0, 0, 0))
+        lvl_text = font_klein.render(f"Level: {level_files[level_id]}", True, (0, 0, 0))
     else:
-        lvl_text = PIXELTYPE_SMALL.render("No levels found in /levels", True, (200, 0, 0))
+        lvl_text = font_klein.render("No levels found in /levels", True, (200, 0, 0))
     screen.blit(lvl_text, lvl_text.get_rect(center=(screen.get_width() // 2, 480)))
 
 #CLASSES
 
-# deze class maakt de blokken aan deze kunnen worden geupdate en getekend op het scherm
+# deze class maakt de tiles aan deze kunnen worden geupdate en getekend op het scherm
 class Tile(pygame.sprite.Sprite):
     def __init__(self, gx, gy, tile_id):
         super().__init__()
@@ -152,6 +138,7 @@ class Stopwatch:
         minutes = int(elapsed // 60)
         seconds = int(elapsed % 60)
         milliseconds = int((elapsed % 1) * 100)
+        return f"{minutes:02d}:{seconds:02d}.{milliseconds:02d}"
 
 # deze class maakt de knoppen aan, deze kunnen worden geupdate en getekend op het scherm.
 # De knoppen kunnen ook transparant zijn, en er kan tekst op worden gezet met een bepaalde fontgrootte en offset.
@@ -196,10 +183,6 @@ class Projectile(pygame.sprite.Sprite):
     def draw(self, screen, cam):
         screen.blit(self.transformed_image, cam.apply_rect(self.rect))
 
-
-#VARIABLES 2
-
-
 # hier zijn de player, gun, blocks, buttons en stopwatch aangemaakt, en de camera is ingesteld om te volgen op de player
 cam = Camera(SCREENSIZE)
 
@@ -214,6 +197,7 @@ button1 = Button(500, 50, 175, 30, True, GREEN,
 button2 = Button(500,100, 175, 30, True, GREEN,
                  30, 5,fontoffsetY= -3,text= 'BULLET TYPE: ' + str(gun.bullet_type))
 
+
 stopwatch = Stopwatch()
 stopwatch.start()
 
@@ -221,14 +205,7 @@ button3 = Button(500,150, 175, 30, True, GREEN,
                  30, 5,fontoffsetY= -3,text= 'TIME: 00:00.00')
 hook = Hook()
 
-# for y,i in enumerate(level):
-#    for x,j in enumerate(i):
- #       if j == "X":
- #           blocks.add(Blocks(x*64,y*64,64,64,GREEN))
-        # if j == "P":
-        #     player.add(Player(x*64,y*64,50,50,BLUE))
-
-#WHILE LOOP
+buttons.add(button1,button2,button3)
 
 # dit is de grote game loop, hier worden alle events afgehandeld, het scherm wordt geupdate en getekend.
 while True:
@@ -245,25 +222,26 @@ while True:
 
         # menu input
         if state == "menu":
-            if state == "menu":
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_UP and level_files:
-                        selected_level_idx = (selected_level_idx - 1) % len(level_files)
-                        selected_level_path = os.path.join(LEVEL_DIR, level_files[selected_level_idx])
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP and level_files:
+                    level_id = (level_id - 1) % len(level_files)
+                    huidig_level = f"levels/{level_files[level_id]}"
 
-                    elif event.key == pygame.K_DOWN and level_files:
-                        selected_level_idx = (selected_level_idx + 1) % len(level_files)
-                        selected_level_path = os.path.join(LEVEL_DIR, level_files[selected_level_idx])
+                elif event.key == pygame.K_DOWN and level_files:
+                    level_id = (level_id + 1) % len(level_files)
+                    huidig_level = f"levels/{level_files[level_id]}"
 
-                    elif event.key == pygame.K_RETURN:
-                        player.reset_position()
-                        stopwatch.reset()
+                elif event.key == pygame.K_RETURN:
+                    player.reset_position()
+                    stopwatch.reset()
 
-                        if selected_level_path:
-                            matrix = load_level_matrix(selected_level_path)
-                            build_blocks_from_matrix(matrix)
-
-                        state = "game"
+                    if huidig_level:
+                        matrix = load_level_matrix(huidig_level)
+                        build_blocks_from_matrix(matrix)
+                    state = "game"
+                elif event.key == pygame.K_ESCAPE:
+                    pygame.quit()
+                    sys.exit()
 
 
         # Game input
