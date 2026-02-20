@@ -35,8 +35,8 @@ selected_block = 0
 
 blockorder = []
 
-files = sorted([f for f in os.listdir('textures') if f.lower().endswith('.png')])
-textures = [os.path.join("textures", f) for f in files]
+files = sorted([f for f in os.listdir("textures") if f.lower().endswith(".png")])
+textures = [f"textures/{f}" for f in files]
 
 # preload surfaces
 tile_surfaces = [
@@ -44,14 +44,11 @@ tile_surfaces = [
     for p in textures
 ]
 
-placed = {}  # (gx,gy) -> Blocks sprite
+placed = {}
 
 
 tile_map = {}
 EMPTY = 0
-
-# textures = ['textures/Aarde_Links','textures/Aarde_Midden.png','textures/Aarde_rechts.png','textures/Grasblok.png'
-#             ]
 
 
 class Blocks(pygame.sprite.Sprite):
@@ -61,14 +58,10 @@ class Blocks(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(x, y))
         self.gridx = gx
         self.gridy = gy
-        self.type = tile_id  # blijft je ID
+        self.type = tile_id
 
     def update(self, offsetx, offsety):
         screen.blit(self.image, (self.rect.x - offsetx, self.rect.y - offsety))
-
-
-    def update(self,offsetx,offsety):
-        screen.blit(self.image, (self.rect.x-offsetx,self.rect.y-offsety))
 
 def save_to_json(matrix):
     with open('levels/level.json', "w", encoding="utf-8") as f:
@@ -79,7 +72,7 @@ def load_from_json(path):
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
         lvl = data.get("level")
-        return lvl  # verwacht list-of-lists met ints
+        return lvl
     except Exception as e:
         return None
 
@@ -99,7 +92,7 @@ def build_blocks_from_matrix(matrix):
             if val == EMPTY:
                 continue
 
-            tile_id = int(val) - 1  # <-- belangrijk
+            tile_id = int(val) - 1
             if 0 <= tile_id < len(tile_surfaces):
                 b = Blocks(x * grid_size, y * grid_size, x, y, tile_id)
                 blocks.add(b)
@@ -120,7 +113,7 @@ def find_matrix_size():
 
 def save_lvl(matrix):
     for (gx, gy), block in placed.items():
-        matrix[gy][gx] = block.type + 1  # <-- belangrijk
+        matrix[gy][gx] = block.type + 1
     return matrix
 
 def print_lvl(matrix):
@@ -132,11 +125,9 @@ def set_tile(gx, gy, tile_id):
     key = (gx, gy)
     old = placed.get(key)
 
-    # als dezelfde tile er al staat: niks doen
     if old and old.type == tile_id:
         return
 
-    # oude tile eruit (geen overlap!)
     if old:
         blocks.remove(old)
         try:
@@ -175,9 +166,9 @@ while True:
             gen_mousepos = (mousepos[0] + offsetx, mousepos[1] + offsety)
             gridx, gridy = gen_mousepos[0] // grid_size, gen_mousepos[1] // grid_size
 
-            if event.button == 1:  # left click
+            if event.button == 1:
                 set_tile(gridx, gridy, selected_block)
-            elif event.button == 3:  # right click
+            elif event.button == 3:
                 erase_tile(gridx, gridy)
 
         if event.type == pygame.KEYDOWN:

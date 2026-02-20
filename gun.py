@@ -1,15 +1,14 @@
-import pygame, math, os
+import pygame, math
 
 if pygame.mixer.get_init() == None:
     pygame.mixer.init()
-BASE_DIR = os.path.dirname(__file__)
-shotgun_shot = pygame.mixer.Sound(os.path.join(BASE_DIR, 'sounds', 'Shotgun_shot.mp3'))
-shotgun_empty = pygame.mixer.Sound(os.path.join(BASE_DIR, 'sounds', 'Empty.mp3'))
+shotgun_shot = pygame.mixer.Sound('sounds/Shotgun_shot.mp3')
+shotgun_empty = pygame.mixer.Sound('sounds/Empty.mp3')
 
 class Gun(pygame.sprite.Sprite):
     def __init__(self, w, h):
         super().__init__()
-        self.realimage = pygame.image.load(os.path.join(BASE_DIR, 'textures', 'Shotgun.png')).convert_alpha()
+        self.realimage = pygame.image.load('textures/Shotgun.png').convert_alpha()
         self.original_image = pygame.transform.scale(self.realimage, (64, 64))
         self.image = self.original_image
         self.rect = self.image.get_rect()
