@@ -48,7 +48,7 @@ placed = {}  # (gx,gy) -> Blocks sprite
 
 
 tile_map = {}
-EMPTY = '0'
+EMPTY = 0
 
 # textures = ['textures/Aarde_Links','textures/Aarde_Midden.png','textures/Aarde_rechts.png','textures/Grasblok.png'
 #             ]
@@ -70,55 +70,46 @@ class Blocks(pygame.sprite.Sprite):
     def update(self,offsetx,offsety):
         screen.blit(self.image, (self.rect.x-offsetx,self.rect.y-offsety))
 
-def save_to_json(matrix, path="level.json"):
-    lines = ["".join(row) for row in matrix]          # <-- belangrijk
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump({"level": lines}, f, indent=0)
+def save_to_json(matrix):
+    with open('levels/level.json', "w", encoding="utf-8") as f:
+        json.dump({"level": matrix}, f, indent=2)
 
-def load_from_json(path="level.json"):
+def load_from_json(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        lines = data.get("level", None)
-        if lines is None:
-            return None
-        # lines -> matrix
-        return [line.split() for line in lines]
-    except:
+        lvl = data.get("level")
+        return lvl  # verwacht list-of-lists met ints
+    except Exception as e:
         return None
+
 
 tiledata = load_from_json("tiledata.json")
 
 def build_blocks_from_matrix(matrix):
     placed.clear()
+    blocks.empty()
+    blockorder.clear()
+
     if matrix is None:
         return
-    blocks.empty()
-    tile_map.clear()
+
     for y, row in enumerate(matrix):
         for x, val in enumerate(row):
             if val == EMPTY:
                 continue
-            if not val.isdigit():
-                continue
-            tile_id = int(val)
-            if tile_id < 0 or tile_id >= len(textures):
-                continue
-            b = Blocks(x * grid_size, y * grid_size, x, y, tile_id)
-            blocks.add(b)
-            blockorder.append(b)
-            placed[(x, y)] = b
+
+            tile_id = int(val) - 1  # <-- belangrijk
+            if 0 <= tile_id < len(tile_surfaces):
+                b = Blocks(x * grid_size, y * grid_size, x, y, tile_id)
+                blocks.add(b)
+                placed[(x, y)] = b
+                blockorder.append(b)
 
 
 def make_matrix():
     max_x, max_y = find_matrix_size()
-    matrix = []
-    for y in range(max_y + 1):
-        row = []
-        for x in range(max_x + 1):
-            row.append(EMPTY)
-        matrix.append(row)
-    return matrix
+    return [[EMPTY for _ in range(max_x + 1)] for _ in range(max_y + 1)]
 
 def find_matrix_size():
     if not placed:
@@ -129,14 +120,12 @@ def find_matrix_size():
 
 def save_lvl(matrix):
     for (gx, gy), block in placed.items():
-        matrix[gy][gx] = str(block.type)
+        matrix[gy][gx] = block.type + 1  # <-- belangrijk
     return matrix
 
-
-
 def print_lvl(matrix):
-    for row in matrix: 
-        print(" ".join(row))
+    for row in matrix:
+        print(" ".join(map(str, row)))
     print()
 
 def set_tile(gx, gy, tile_id):

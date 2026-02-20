@@ -18,6 +18,6 @@ class Hook(pygame.sprite.Sprite):
         self.pro.start(self.rect.centerx, self.rect.centery, 10 ,10, self.angle, 30)
         self.hooking = True
     def draw(self, screen, cam):
-        screen.blit(self.transformed_image, cam.apply_rect(self.rect))
+        #screen.blit(self.transformed_image, cam.apply_rect(self.rect))
         if self.hooking:
             self.pro.draw(screen, cam)

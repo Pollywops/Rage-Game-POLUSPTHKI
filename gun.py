@@ -10,7 +10,7 @@ class Gun(pygame.sprite.Sprite):
     def __init__(self, w, h):
         super().__init__()
         self.realimage = pygame.image.load(os.path.join(BASE_DIR, 'textures', 'Shotgun.png')).convert_alpha()
-        self.original_image = pygame.transform.scale(self.realimage, (128, 128))
+        self.original_image = pygame.transform.scale(self.realimage, (64, 64))
         self.image = self.original_image
         self.rect = self.image.get_rect()
         self.rect.center = (10, 10)
@@ -32,8 +32,8 @@ class Gun(pygame.sprite.Sprite):
                 if player.vely > 0:
                     player.vely = 0
                     print(player.vely)
-            addvelx = -math.cos(self.angle) * 10 * self.bullet_strength
-            addvely = -math.sin(self.angle) * 10 * self.bullet_strength
+            addvelx = -math.cos(self.angle) * 6.5 * self.bullet_strength
+            addvely = -math.sin(self.angle) * 6.5 * self.bullet_strength
             player.add_vel(addvelx, addvely)
         else:
             shotgun_empty.play()
@@ -42,7 +42,7 @@ class Gun(pygame.sprite.Sprite):
         mx,my = cam.apply_mouse()
         self.angle = math.atan2(my - player.rect.centery, mx - player.rect.centerx)
         # print(f'x:{math.cos(self.angle)}, y:{math.sin(self.angle)}')
-        self.vx, self.vy = (player.rect.centerx + math.cos(self.angle) * 80),(player.rect.centery + math.sin(self.angle) * 80)
+        self.vx, self.vy = (player.rect.centerx + math.cos(self.angle) * 40),(player.rect.centery + math.sin(self.angle) * 40)
         self.pos = (self.vx, self.vy)
         self.deg = -math.degrees(self.angle)
         if (self.deg < -90 or self.deg > 90) and not self.flipped:

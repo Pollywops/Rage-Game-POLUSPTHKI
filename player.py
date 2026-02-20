@@ -7,7 +7,7 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, w, h, color):
         super().__init__()
         self.realimage = pygame.image.load(os.path.join(BASE_DIR, 'textures', 'Pot.png')).convert_alpha()
-        self.originalimage = pygame.transform.scale(self.realimage, (60, 60))
+        self.originalimage = pygame.transform.scale(self.realimage, (32, 32))
         self.image = self.originalimage
         self.rect = self.image.get_rect()
         self.rect.center = x, y

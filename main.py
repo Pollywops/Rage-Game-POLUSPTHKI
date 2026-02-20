@@ -82,6 +82,7 @@ def load_level_matrix(path):
         return data.get("level")
     except:
         return None
+EMPTY = 0
 
 def build_blocks_from_matrix(matrix):
     blocks.empty()
@@ -90,13 +91,10 @@ def build_blocks_from_matrix(matrix):
 
     for y, row in enumerate(matrix):
         for x, val in enumerate(row):
-            if val == "0":
+            if int(val) == EMPTY:
                 continue
-            else:
-                try:
-                    tile_id = int(val) + 10
-                except:
-                    continue
+
+            tile_id = int(val) - 1  # <-- belangrijk
             if 0 <= tile_id < len(tile_surfaces):
                 blocks.add(Tile(x, y, tile_id))
 
@@ -154,9 +152,8 @@ class Stopwatch:
         minutes = int(elapsed // 60)
         seconds = int(elapsed % 60)
         milliseconds = int((elapsed % 1) * 100)
-        return f"{minutes:02d}:{seconds:02d}.{milliseconds:02d}"
 
-# deze class maakt de knoppen aan, deze kunnen worden geupdate en getekend op het scherm. 
+# deze class maakt de knoppen aan, deze kunnen worden geupdate en getekend op het scherm.
 # De knoppen kunnen ook transparant zijn, en er kan tekst op worden gezet met een bepaalde fontgrootte en offset.
 class Button(pygame.sprite.Sprite):
     def __init__(self,x,y,w,h,Transparent, color,fontsize, fontoffsetX, fontoffsetY, text):
