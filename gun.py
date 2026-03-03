@@ -33,6 +33,12 @@ class Gun(pygame.sprite.Sprite):
         self.bullets = 2
         # Start type kogel
         self.bullet_type = 'NORMAL'
+        self.super_shots_left = 0
+
+    def activate_super_shots(self, amount=2):
+        self.bullet_type = 'SUPER'
+        self.super_shots_left = amount
+        self.bullets = amount
 
 
     def shoot(self, player):
@@ -64,6 +70,12 @@ class Gun(pygame.sprite.Sprite):
 
             # Voeg velocity toe aan speler
             player.add_vel(addvelx, addvely)
+
+            if self.bullet_type == 'SUPER':
+                self.super_shots_left -= 1
+                if self.super_shots_left <= 0:
+                    self.bullet_type = 'NORMAL'
+                    self.super_shots_left = 0
         else:
             # Als shotgun leeg is dan speelt het leegge geluid af
             shotgun_empty.play()
@@ -96,7 +108,4 @@ class Gun(pygame.sprite.Sprite):
         # Maak nieuwe rect op basis van geroteerde image
         self.rect = self.image.get_rect(center=self.pos)
         # Tekent het wapen opnieuw
-        screen.blit(self.image, cam.apply_rect(self.rect)):
-        self.image = pygame.transform.rotate(self.original_image, self.deg)
-        self.rect = self.image.get_rect(center=self.pos)
         screen.blit(self.image, cam.apply_rect(self.rect))

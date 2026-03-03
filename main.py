@@ -49,6 +49,7 @@ gun_group = pygame.sprite.GroupSingle()
 projectiles = pygame.sprite.Group()
 blocks = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
+pickups = pygame.sprite.Group()
 
 grid_size = 32
 
@@ -114,6 +115,42 @@ class Tile(pygame.sprite.Sprite):
 
     def draw(self):
         screen.blit(self.image, cam.apply_rect(self.rect))
+
+#dit is de class voor de bullet pick ups
+class Pickup(pygame.sprite.Sprite):
+    def __init__(self, gx, gy, kind="super", image_path=None):
+        super().__init__()
+        self.kind = kind
+
+        if image_path:
+            self.image = pygame.transform.scale(
+                pygame.image.load(image_path).convert_alpha(),
+                (grid_size, grid_size),
+            )
+        else:
+            self.image = pygame.Surface((grid_size, grid_size), pygame.SRCALPHA)
+            self.image.fill((180, 60, 255))
+
+        self.rect = self.image.get_rect(topleft=(gx * grid_size, gy * grid_size))
+
+    def update(self):
+        pass
+
+    def draw(self):
+        screen.blit(self.image, cam.apply_rect(self.rect))
+
+
+def spawn_default_pickups():
+    pickups.empty()
+    pickups.add(Pickup(8, 8, "super"))
+    pickups.add(Pickup(14, 6, "super"))
+
+
+def collect_pickups():
+    hits = pygame.sprite.spritecollide(player, pickups, True)
+    for pickup in hits:
+        if pickup.kind == "super":
+            gun.activate_super_shots(2)
 
 
 # dit is de class om de stopwatch te maken, deze kan worden gestart, gereset en de tijd kan worden opgevraagd in seconden of in een string in het formaat mm:ss.ms
@@ -238,6 +275,7 @@ while True:
                     if huidig_level:
                         matrix = load_level_matrix(huidig_level)
                         build_blocks_from_matrix(matrix)
+                    spawn_default_pickups()
                     state = "game"
                 elif event.key == pygame.K_ESCAPE:
                     pygame.quit()
@@ -255,15 +293,16 @@ while True:
                 elif event.key == pygame.K_r:
                     if gun.bullet_type == 'SUPER':
                         gun.bullet_type = 'NORMAL'
+                        gun.super_shots_left = 0
                         gun.bullets = 2
                         print("NORMAL BULLET ACTIVATED")
                     else:
-                        gun.bullet_type = 'SUPER'
-                        gun.bullets = 2
+                        gun.activate_super_shots(2)
                         print("SUPER BULLET ACTIVATED")
                 elif event.key == pygame.K_t:
                     stopwatch.reset()
                     player.reset_position()
+                    spawn_default_pickups()
                 elif event.key == pygame.K_h:
                     hook.hook(Projectile())
 
@@ -277,12 +316,17 @@ while True:
         cam.update_center(player.rect)
 
         player.update(blocks, gun)
+        collect_pickups()
         gun.update(player, cam)
         hook.update(gun)
 
         for b in blocks:
             b.update()
             b.draw()
+
+        for p in pickups:
+            p.update()
+            p.draw()
 
         button1.text = 'BULLETS: ' + str(gun.bullets)
         button2.text = 'BULLET TYPE: ' + str(gun.bullet_type)
