@@ -35,14 +35,24 @@ selected_block = 0
 
 blockorder = []
 
-files = sorted([f for f in os.listdir("textures") if f.lower().endswith(".png")])
-textures = [f"textures/{f}" for f in files]
 
 # preload surfaces
-tile_surfaces = [
-    pygame.transform.scale(pygame.image.load(p).convert_alpha(), (grid_size, grid_size))
-    for p in textures
-]
+with open("tiledata.json", "r") as f:
+    tiledata = json.load(f)
+
+tile_defs = tiledata["tiles"]
+
+tile_surfaces = []
+tile_names = []
+
+for tile in tile_defs:
+    path = os.path.join("textures", tile["file"])
+    surf = pygame.transform.scale(
+        pygame.image.load(path).convert_alpha(),
+        (grid_size, grid_size)
+    )
+    tile_surfaces.append(surf)
+    tile_names.append(tile["name"])
 
 placed = {}
 
@@ -179,7 +189,7 @@ while True:
                     placed.pop((last.gridx, last.gridy), None)
 
             if event.key == pygame.K_1:
-                selected_block = (selected_block + 1) % len(textures)
+                selected_block = (selected_block + 1) % len(tile_surfaces)
 
             if event.key == pygame.K_s:
                 lvl = make_matrix()
@@ -214,6 +224,10 @@ while True:
 
     for y in range(starty,SCREENSIZE[1],grid_size):
         pygame.draw.line(screen,BLACK,(0,y),(SCREENSIZE[0],y))
+
+    font = pygame.font.SysFont("Arial", 24)
+    text = font.render(f"Selected: {tile_names[selected_block]}", True, BLACK)
+    screen.blit(text, (10, 10))
 
     pygame.display.flip()
     clock.tick(FPS)

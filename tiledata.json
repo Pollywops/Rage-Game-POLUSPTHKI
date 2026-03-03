@@ -1,0 +1,7 @@
+{
+  "tiles": [
+    { "name": "aarde", "file": "Aarde_Midden.png", "solid": true },
+    { "name": "gras", "file": "Gras_Top.png", "solid": true },
+    { "name": "spike", "file": "spike.png", "solid": false, "hazard": true }
+  ]
+}

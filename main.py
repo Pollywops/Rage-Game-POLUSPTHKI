@@ -53,14 +53,20 @@ pickups = pygame.sprite.Group()
 
 grid_size = 32
 
-texture_files = sorted([f for f in os.listdir("textures") if f.lower().endswith(".png")])
-texture_paths = [f"textures/{f}" for f in texture_files]
+with open("tiledata.json", "r") as f:
+    tiledata = json.load(f)
 
-tile_surfaces = [
-    pygame.transform.scale(pygame.image.load(p).convert_alpha(), (grid_size, grid_size))
-    for p in texture_paths
-]
+tile_defs = tiledata["tiles"]
 
+tile_surfaces = []
+
+for tile in tile_defs:
+    path = os.path.join("textures", tile["file"])
+    surf = pygame.transform.scale(
+        pygame.image.load(path).convert_alpha(),
+        (grid_size, grid_size)
+    )
+    tile_surfaces.append(surf)
 
 # deze functie zet de lijnen uit het json bestand om in een matrix, zodat deze kan worden gebruikt om de blokken en de player te maken
 def load_level_matrix(path):
