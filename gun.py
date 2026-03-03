@@ -11,8 +11,8 @@ shotgun_empty = pygame.mixer.Sound('sounds/Empty.mp3')
 
 # Kracht op basis van kogel
 BULLET_STRENGTH = {
-    "NORMAL": 1,
-    "SUPER": 1.5
+    "NORMAL": 1.15,
+    "SUPER": 1.6
 }
 
 class Gun(pygame.sprite.Sprite):
@@ -77,7 +77,7 @@ class Gun(pygame.sprite.Sprite):
                     self.bullet_type = 'NORMAL'
                     self.super_shots_left = 0
         else:
-            # Als shotgun leeg is dan speelt het leegge geluid af
+            # Als shotgun leeg is dan speelt het lege geluid af
             shotgun_empty.play()
 
     def update(self, player, cam):
