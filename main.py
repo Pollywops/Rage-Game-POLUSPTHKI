@@ -48,6 +48,7 @@ player_group = pygame.sprite.GroupSingle()
 gun_group = pygame.sprite.GroupSingle()
 projectiles = pygame.sprite.Group()
 blocks = pygame.sprite.Group()
+spikes = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
 pickups = pygame.sprite.Group()
 
@@ -79,6 +80,7 @@ def load_level_matrix(path):
 
 def build_blocks_from_matrix(matrix):
     blocks.empty()
+    spikes.empty()
     if not matrix:
         return
 
@@ -89,7 +91,12 @@ def build_blocks_from_matrix(matrix):
 
             tile_id = int(val) - 1  # <-- belangrijk
             if 0 <= tile_id < len(tile_surfaces):
-                blocks.add(Tile(x, y, tile_id))
+                tile_info = tile_defs[tile_id]
+                tile = Tile(x, y, tile_id)
+                if tile_info.get("hazard", False):
+                    spikes.add(tile)
+                elif tile_info.get("solid", True):
+                    blocks.add(tile)
 
 
 
@@ -157,6 +164,13 @@ def collect_pickups():
     for pickup in hits:
         if pickup.kind == "super":
             gun.activate_super_shots(2)
+
+
+def kill_player_on_spike():
+    if pygame.sprite.spritecollide(player, spikes, False):
+        player.reset_position()
+        gun.bullets = 2
+        stopwatch.reset()
 
 
 # dit is de class om de stopwatch te maken, deze kan worden gestart, gereset en de tijd kan worden opgevraagd in seconden of in een string in het formaat mm:ss.ms
@@ -322,6 +336,7 @@ while True:
         cam.update_center(player.rect)
 
         player.update(blocks, gun)
+        kill_player_on_spike()
         collect_pickups()
         gun.update(player, cam)
         hook.update(gun)
@@ -329,6 +344,10 @@ while True:
         for b in blocks:
             b.update()
             b.draw()
+
+        for spike in spikes:
+            spike.update()
+            spike.draw()
 
         for p in pickups:
             p.update()
