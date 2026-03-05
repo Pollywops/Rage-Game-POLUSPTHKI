@@ -54,7 +54,11 @@ for tile in tile_defs:
     tile_surfaces.append(surf)
     tile_names.append(tile["name"])
 
+SPAWN_TOOL_ID = len(tile_surfaces)
+tool_names = tile_names + ["spawn"]
+
 placed = {}
+spawn_pos = None
 
 
 tile_map = {}
@@ -74,8 +78,11 @@ class Blocks(pygame.sprite.Sprite):
         screen.blit(self.image, (self.rect.x - offsetx, self.rect.y - offsety))
 
 def save_to_json(matrix):
+    payload = {"level": matrix}
+    if spawn_pos is not None:
+        payload["spawn"] = {"x": spawn_pos[0], "y": spawn_pos[1]}
     with open('levels/level.json', "w", encoding="utf-8") as f:
-        json.dump({"level": matrix}, f, indent=2)
+        json.dump(payload, f, indent=2)
 
 def load_from_json(path):
     try:
@@ -84,6 +91,14 @@ def load_from_json(path):
         lvl = data.get("level")
         return lvl
     except Exception as e:
+        return None
+
+
+def load_level_data(path):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
         return None
 
 
@@ -163,8 +178,17 @@ def erase_tile(gx, gy):
 
 tiledata = load_from_json("tiledata.json")
 
-loaded = load_from_json("levels/level.json")
-build_blocks_from_matrix(loaded)
+loaded_data = load_level_data("levels/level.json")
+if loaded_data:
+    build_blocks_from_matrix(loaded_data.get("level"))
+    loaded_spawn = loaded_data.get("spawn")
+    if isinstance(loaded_spawn, dict) and "x" in loaded_spawn and "y" in loaded_spawn:
+        spawn_pos = (int(loaded_spawn["x"]), int(loaded_spawn["y"]))
+    elif isinstance(loaded_spawn, list) and len(loaded_spawn) >= 2:
+        spawn_pos = (int(loaded_spawn[0]), int(loaded_spawn[1]))
+else:
+    loaded = load_from_json("levels/level.json")
+    build_blocks_from_matrix(loaded)
 
 while True:
     for event in pygame.event.get():
@@ -177,9 +201,14 @@ while True:
             gridx, gridy = gen_mousepos[0] // grid_size, gen_mousepos[1] // grid_size
 
             if event.button == 1:
-                set_tile(gridx, gridy, selected_block)
+                if selected_block == SPAWN_TOOL_ID:
+                    spawn_pos = (gridx, gridy)
+                else:
+                    set_tile(gridx, gridy, selected_block)
             elif event.button == 3:
                 erase_tile(gridx, gridy)
+                if spawn_pos == (gridx, gridy):
+                    spawn_pos = None
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_z:
@@ -188,14 +217,23 @@ while True:
                     blocks.remove(last)
                     placed.pop((last.gridx, last.gridy), None)
 
-            if event.key == pygame.K_1:
-                selected_block = (selected_block + 1) % len(tile_surfaces)
+            if pygame.K_1 <= event.key <= pygame.K_9:
+                number_index = event.key - pygame.K_1
+                if number_index < len(tool_names):
+                    selected_block = number_index
 
             if event.key == pygame.K_s:
                 lvl = make_matrix()
                 lvl = save_lvl(lvl)
                 print_lvl(lvl)
                 save_to_json(lvl)
+            if event.key == pygame.K_x:
+                mousepos = pygame.mouse.get_pos()
+                gen_mousepos = (mousepos[0] + offsetx, mousepos[1] + offsety)
+                gridx, gridy = gen_mousepos[0] // grid_size, gen_mousepos[1] // grid_size
+                erase_tile(gridx, gridy)
+                if spawn_pos == (gridx, gridy):
+                    spawn_pos = None
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_RIGHT]:
@@ -225,9 +263,17 @@ while True:
     for y in range(starty,SCREENSIZE[1],grid_size):
         pygame.draw.line(screen,BLACK,(0,y),(SCREENSIZE[0],y))
 
+    if spawn_pos is not None:
+        spawn_screen_x = spawn_pos[0] * grid_size - offsetx
+        spawn_screen_y = spawn_pos[1] * grid_size - offsety
+        spawn_rect = pygame.Rect(spawn_screen_x, spawn_screen_y, grid_size, grid_size)
+        pygame.draw.rect(screen, RED, spawn_rect)
+
     font = pygame.font.SysFont("Arial", 24)
-    text = font.render(f"Selected: {tile_names[selected_block]}", True, BLACK)
+    text = font.render(f"Selected: {tool_names[selected_block]}", True, BLACK)
     screen.blit(text, (10, 10))
+    controls_text = font.render(f"Keys 1-9 select (spawn={SPAWN_TOOL_ID + 1}) | LMB place | RMB erase | X erase at cursor", True, BLACK)
+    screen.blit(controls_text, (10, 36))
 
     pygame.display.flip()
     clock.tick(FPS)

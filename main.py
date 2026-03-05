@@ -69,14 +69,32 @@ for tile in tile_defs:
     )
     tile_surfaces.append(surf)
 
-# deze functie zet de lijnen uit het json bestand om in een matrix, zodat deze kan worden gebruikt om de blokken en de player te maken
-def load_level_matrix(path):
+# deze functie laadt alle level data uit json (level matrix + optionele spawn)
+def load_level_data(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return data.get("level")
+            return json.load(f)
     except:
         return None
+
+
+def set_player_spawn_from_level_data(level_data):
+    if not level_data:
+        return
+
+    spawn_data = level_data.get("spawn")
+    if isinstance(spawn_data, dict) and "x" in spawn_data and "y" in spawn_data:
+        spawn_gx = int(spawn_data["x"])
+        spawn_gy = int(spawn_data["y"])
+    elif isinstance(spawn_data, list) and len(spawn_data) >= 2:
+        spawn_gx = int(spawn_data[0])
+        spawn_gy = int(spawn_data[1])
+    else:
+        return
+
+    spawn_x = spawn_gx * grid_size + grid_size // 2
+    spawn_y = spawn_gy * grid_size + grid_size // 2
+    player.start_pos = (spawn_x, spawn_y)
 
 def build_blocks_from_matrix(matrix):
     blocks.empty()
@@ -289,12 +307,14 @@ while True:
                     huidig_level = f"levels/{level_files[level_id]}"
 
                 elif event.key == pygame.K_RETURN:
-                    player.reset_position()
                     stopwatch.reset()
 
                     if huidig_level:
-                        matrix = load_level_matrix(huidig_level)
+                        level_data = load_level_data(huidig_level)
+                        matrix = level_data.get("level") if level_data else None
                         build_blocks_from_matrix(matrix)
+                        set_player_spawn_from_level_data(level_data)
+                    player.reset_position()
                     spawn_default_pickups()
                     state = "game"
                 elif event.key == pygame.K_ESCAPE:
