@@ -28,6 +28,7 @@ level_files = [f"level{i}.json" for i in range(1, 11)]
 level_id = 0
 huidig_level = f"levels/{level_files[level_id]}"
 end_rect = None
+current_level_matrix = None
 
 ##########COLORS##############
 RED = (255,0,0)
@@ -72,13 +73,8 @@ for tile in tile_dicts:
     )
     tile_surfaces.append(surf)
 
-<<<<<<< HEAD
-# deze functie laadt het level en de spawn uit json
+# deze functie laadt het level, spawn en end marker uit json
 def load_level(path):
-=======
-# deze functie laadt alle level data uit json (level matrix + spawn)
-def load_level_data(path):
->>>>>>> d65c3da2031bf1514e63d98ac185549bb178390d
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -88,12 +84,24 @@ def load_level_data(path):
         spawn_data = data.get("spawn")
         if isinstance(spawn_data, dict) and "x" in spawn_data and "y" in spawn_data:
             spawn = (int(spawn_data["x"]), int(spawn_data["y"]))
+        elif isinstance(spawn_data, list) and len(spawn_data) >= 2:
+            spawn = (int(spawn_data[0]), int(spawn_data[1]))
 
-        return matrix, spawn
+        end_pos = None
+        end_data = data.get("end")
+        if isinstance(end_data, dict) and "x" in end_data and "y" in end_data:
+            end_pos = (int(end_data["x"]), int(end_data["y"]))
+        elif isinstance(end_data, list) and len(end_data) >= 2:
+            end_pos = (int(end_data[0]), int(end_data[1]))
+
+        return matrix, spawn, end_pos
     except:
-        return None, None
+        return None, None, None
 
 def build_blocks_from_matrix(matrix):
+    global current_level_matrix
+
+    current_level_matrix = matrix
     blocks.empty()
     if not matrix:
         return
@@ -108,9 +116,61 @@ def build_blocks_from_matrix(matrix):
                 tile = Tile(x, y, tile_id)
                 blocks.add(tile)
 
+
+def reset_run_state():
+    player.reset_position()
+    gun.bullets = 2
+    gun.bullet_type = 'NORMAL'
+    gun.super_shots_left = 0
+    hook.hooking = False
+    stopwatch.reset()
+    spawn_default_pickups()
+
+
+def is_spike_at_world(x, y):
+    if not current_level_matrix:
+        return False
+
+    gx = int(x // grid_size)
+    gy = int(y // grid_size)
+
+    if gy < 0 or gy >= len(current_level_matrix):
+        return False
+
+    row = current_level_matrix[gy]
+    if gx < 0 or gx >= len(row):
+        return False
+
+    try:
+        raw = int(row[gx])
+    except:
+        return False
+
+    if raw == EMPTY:
+        return False
+
+    tile_id = raw - 1
+    if tile_id < 0 or tile_id >= len(tile_dicts):
+        return False
+
+    info = tile_dicts[tile_id]
+    return bool(info.get("spike", False))
+
 bouncing_lock = False
 
 def tile_function_update(prev_vy):
+    global bouncing_lock
+
+    check_points = [
+        (player.rect.left + 2, player.rect.bottom - 1),
+        (player.rect.centerx, player.rect.bottom - 1),
+        (player.rect.right - 2, player.rect.bottom - 1),
+        (player.rect.centerx, player.rect.centery),
+    ]
+    for px, py in check_points:
+        if is_spike_at_world(px, py):
+            reset_run_state()
+            return
 
     bouncing = False
 
@@ -118,19 +178,19 @@ def tile_function_update(prev_vy):
         info = tile_dicts[tile.tile_id]
 
         if info.get("spike", False):
-            if player.rect.colliderect(tile.rect):
-                player.reset_position()
-                gun.bullets = 2
-                stopwatch.reset()
+            touch_rect = player.rect.move(0, 1)
+            if player.rect.colliderect(tile.rect) or touch_rect.colliderect(tile.rect):
+                reset_run_state()
+                return
 
         if info.get("bouncy", False):
             feet = player.rect.move(0, 2)
             if feet.colliderect(tile.rect):
                 bouncing = True
 
-                if (not bouncing_lock) and old_vy > 0:
+                if (not bouncing_lock) and prev_vy > 0:
                     strength = info.get("strength", 1.5)
-                    player.vely = -max(6, old_vy) * strength
+                    player.vely = -max(6, prev_vy) * strength
                     bouncing_lock = True
     if not bouncing:
         bouncing_lock = False
@@ -369,24 +429,22 @@ while True:
                     stopwatch.reset()
 
                     if huidig_level:
-                        matrix, spawn = load_level(huidig_level)
+                        matrix, spawn, end_pos = load_level(huidig_level)
                         build_blocks_from_matrix(matrix)
-<<<<<<< HEAD
                         if spawn is not None:
                             player.start_pos = (
                                 spawn[0] * grid_size + grid_size // 2,
                                 spawn[1] * grid_size + grid_size // 2,
                             )
-=======
-                        print("Loaded tiles:", len(blocks))
-                        set_player_spawn_from_level_data(level_data)
-                        end_data = level_data.get("end") if level_data else None
-                        if isinstance(end_data, list) and len(end_data) >= 2:
-                            end_rect = pygame.Rect(int(end_data[0]) * grid_size, int(end_data[1]) * grid_size,
-                                                   grid_size, grid_size)
+                        if end_pos is not None:
+                            end_rect = pygame.Rect(
+                                end_pos[0] * grid_size,
+                                end_pos[1] * grid_size,
+                                grid_size,
+                                grid_size,
+                            )
                         else:
                             end_rect = None
->>>>>>> d65c3da2031bf1514e63d98ac185549bb178390d
                     player.reset_position()
                     spawn_default_pickups()
                     state = "game"
@@ -413,9 +471,7 @@ while True:
                         gun.activate_super_shots(2)
                         print("SUPER BULLET ACTIVATED")
                 elif event.key == pygame.K_t:
-                    stopwatch.reset()
-                    player.reset_position()
-                    spawn_default_pickups()
+                    reset_run_state()
                 elif event.key == pygame.K_h:
                     hook.hook(Projectile())
 

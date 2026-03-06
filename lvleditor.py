@@ -78,8 +78,6 @@ def save_to_json(matrix, markers):
     with open('levels/level.json', "w", encoding="utf-8") as f:
         json.dump({"level": matrix, "spawn": markers["spawn"], "end": markers["end"]}, f, indent=2)
 
-<<<<<<< HEAD
-=======
 def load_from_json(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -87,11 +85,6 @@ def load_from_json(path):
         return data
     except:
         return None
-
-
-tiledata = load_from_json("tiledata.json")
-
->>>>>>> d65c3da2031bf1514e63d98ac185549bb178390d
 def build_blocks_from_matrix(matrix):
     placed.clear()
     blocks.empty()
@@ -170,28 +163,22 @@ def draw_marker(pos, color):
     r = pygame.Rect(gx*grid_size - offsetx, gy*grid_size - offsety, grid_size, grid_size)
     pygame.draw.rect(screen, color, r, 3)
 
-try:
-    with open("levels/level.json", "r", encoding="utf-8") as f:
-        loaded_data = json.load(f)
-except:
-    loaded_data = None
-
-<<<<<<< HEAD
-if loaded_data:
-    build_blocks_from_matrix(loaded_data.get("level"))
-    loaded_spawn = loaded_data.get("spawn")
-    if isinstance(loaded_spawn, dict) and "x" in loaded_spawn and "y" in loaded_spawn:
-        spawn_pos = (int(loaded_spawn["x"]), int(loaded_spawn["y"]))
-=======
 loaded_data = load_from_json("levels/level.json")
 loaded_matrix = loaded_data.get("level") if loaded_data else None
 build_blocks_from_matrix(loaded_matrix)
 
 if loaded_data:
-    markers["spawn"] = loaded_data.get("spawn")
-    markers["end"] = loaded_data.get("end")
+    loaded_spawn = loaded_data.get("spawn")
+    if isinstance(loaded_spawn, dict) and "x" in loaded_spawn and "y" in loaded_spawn:
+        markers["spawn"] = [int(loaded_spawn["x"]), int(loaded_spawn["y"])]
+    elif isinstance(loaded_spawn, list) and len(loaded_spawn) >= 2:
+        markers["spawn"] = [int(loaded_spawn[0]), int(loaded_spawn[1])]
 
->>>>>>> d65c3da2031bf1514e63d98ac185549bb178390d
+    loaded_end = loaded_data.get("end")
+    if isinstance(loaded_end, dict) and "x" in loaded_end and "y" in loaded_end:
+        markers["end"] = [int(loaded_end["x"]), int(loaded_end["y"])]
+    elif isinstance(loaded_end, list) and len(loaded_end) >= 2:
+        markers["end"] = [int(loaded_end[0]), int(loaded_end[1])]
 
 while True:
     for event in pygame.event.get():
