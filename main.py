@@ -162,6 +162,10 @@ def tile_function_update(prev_vy):
     global bouncing_lock
 
     check_points = [
+        (player.rect.left + 1, player.rect.top + 1),
+        (player.rect.right - 1, player.rect.top + 1),
+        (player.rect.left + 1, player.rect.centery),
+        (player.rect.right - 1, player.rect.centery),
         (player.rect.left + 2, player.rect.bottom - 1),
         (player.rect.centerx, player.rect.bottom - 1),
         (player.rect.right - 2, player.rect.bottom - 1),
@@ -178,8 +182,15 @@ def tile_function_update(prev_vy):
         info = tile_dicts[tile.tile_id]
 
         if info.get("spike", False):
-            touch_rect = player.rect.move(0, 1)
-            if player.rect.colliderect(tile.rect) or touch_rect.colliderect(tile.rect):
+            touch_down = player.rect.move(0, 1)
+            touch_left = player.rect.move(-1, 0)
+            touch_right = player.rect.move(1, 0)
+            if (
+                player.rect.colliderect(tile.rect)
+                or touch_down.colliderect(tile.rect)
+                or touch_left.colliderect(tile.rect)
+                or touch_right.colliderect(tile.rect)
+            ):
                 reset_run_state()
                 return
 
