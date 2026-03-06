@@ -27,6 +27,7 @@ state = "menu"
 level_files = [f"level{i}.json" for i in range(1, 11)]
 level_id = 0
 huidig_level = f"levels/{level_files[level_id]}"
+end_rect = None
 
 ##########COLORS##############
 RED = (255,0,0)
@@ -49,7 +50,6 @@ player_group = pygame.sprite.GroupSingle()
 gun_group = pygame.sprite.GroupSingle()
 projectiles = pygame.sprite.Group()
 blocks = pygame.sprite.Group()
-spikes = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
 pickups = pygame.sprite.Group()
 
@@ -58,11 +58,13 @@ grid_size = 32
 with open("tiledata.json", "r") as f:
     tiledata = json.load(f)
 
-tile_defs = tiledata["tiles"]
+tile_dicts = tiledata["tiles"]
+for i, t in enumerate(tile_dicts):
+    print("TILE", i+1, t.get("name"), t.get("file"))
 
 tile_surfaces = []
 
-for tile in tile_defs:
+for tile in tile_dicts:
     path = os.path.join("textures", tile["file"])
     surf = pygame.transform.scale(
         pygame.image.load(path).convert_alpha(),
@@ -70,8 +72,13 @@ for tile in tile_defs:
     )
     tile_surfaces.append(surf)
 
+<<<<<<< HEAD
 # deze functie laadt het level en de spawn uit json
 def load_level(path):
+=======
+# deze functie laadt alle level data uit json (level matrix + spawn)
+def load_level_data(path):
+>>>>>>> d65c3da2031bf1514e63d98ac185549bb178390d
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -88,7 +95,6 @@ def load_level(path):
 
 def build_blocks_from_matrix(matrix):
     blocks.empty()
-    spikes.empty()
     if not matrix:
         return
 
@@ -97,15 +103,37 @@ def build_blocks_from_matrix(matrix):
             if int(val) == EMPTY:
                 continue
 
-            tile_id = int(val) - 1  # <-- belangrijk
+            tile_id = int(val) - 1
             if 0 <= tile_id < len(tile_surfaces):
-                tile_info = tile_defs[tile_id]
                 tile = Tile(x, y, tile_id)
-                if tile_info.get("hazard", False):
-                    spikes.add(tile)
-                elif tile_info.get("solid", True):
-                    blocks.add(tile)
+                blocks.add(tile)
 
+bouncing_lock = False
+
+def tile_function_update(prev_vy):
+
+    bouncing = False
+
+    for tile in blocks:
+        info = tile_dicts[tile.tile_id]
+
+        if info.get("spike", False):
+            if player.rect.colliderect(tile.rect):
+                player.reset_position()
+                gun.bullets = 2
+                stopwatch.reset()
+
+        if info.get("bouncy", False):
+            feet = player.rect.move(0, 2)
+            if feet.colliderect(tile.rect):
+                bouncing = True
+
+                if (not bouncing_lock) and old_vy > 0:
+                    strength = info.get("strength", 1.5)
+                    player.vely = -max(6, old_vy) * strength
+                    bouncing_lock = True
+    if not bouncing:
+        bouncing_lock = False
 
 
 def draw_menu(screen):
@@ -152,7 +180,8 @@ def draw_menu(screen):
 class Tile(pygame.sprite.Sprite):
     def __init__(self, gx, gy, tile_id):
         super().__init__()
-        self.image = tile_surfaces[tile_id]
+        self.tile_id = tile_id
+        self.image = tile_surfaces[self.tile_id]
         self.rect = self.image.get_rect(topleft=(gx * grid_size, gy * grid_size))
 
     def draw(self):
@@ -195,13 +224,6 @@ def collect_pickups():
             gun.activate_super_shots(2)
 
 
-def kill_player_on_spike():
-    if pygame.sprite.spritecollide(player, spikes, False):
-        player.reset_position()
-        gun.bullets = 2
-        stopwatch.reset()
-
-
 # dit is de class om de stopwatch te maken, deze kan worden gestart, gereset en de tijd kan worden opgevraagd in seconden of in een string in het formaat mm:ss.ms
 class Stopwatch:
     def __init__(self):
@@ -228,6 +250,7 @@ class Stopwatch:
 
 # deze class maakt de knoppen aan, deze kunnen worden geupdate en getekend op het scherm.
 # De knoppen kunnen ook transparant zijn, en er kan tekst op worden gezet met een bepaalde fontgrootte en offset.
+
 class Button(pygame.sprite.Sprite):
     def __init__(self,x,y,w,h,Transparent, color,fontsize, fontoffsetX, fontoffsetY, text):
         super().__init__()
@@ -348,11 +371,22 @@ while True:
                     if huidig_level:
                         matrix, spawn = load_level(huidig_level)
                         build_blocks_from_matrix(matrix)
+<<<<<<< HEAD
                         if spawn is not None:
                             player.start_pos = (
                                 spawn[0] * grid_size + grid_size // 2,
                                 spawn[1] * grid_size + grid_size // 2,
                             )
+=======
+                        print("Loaded tiles:", len(blocks))
+                        set_player_spawn_from_level_data(level_data)
+                        end_data = level_data.get("end") if level_data else None
+                        if isinstance(end_data, list) and len(end_data) >= 2:
+                            end_rect = pygame.Rect(int(end_data[0]) * grid_size, int(end_data[1]) * grid_size,
+                                                   grid_size, grid_size)
+                        else:
+                            end_rect = None
+>>>>>>> d65c3da2031bf1514e63d98ac185549bb178390d
                     player.reset_position()
                     spawn_default_pickups()
                     state = "game"
@@ -385,7 +419,7 @@ while True:
                 elif event.key == pygame.K_h:
                     hook.hook(Projectile())
 
-    #draw
+    #draw en update
     if state == "menu":
         draw_menu(screen)
 
@@ -394,8 +428,11 @@ while True:
 
         cam.update_center(player.rect)
 
+        old_vy = player.vely
         player.update(blocks, gun)
-        kill_player_on_spike()
+        tile_function_update(old_vy)
+        if end_rect and player.rect.colliderect(end_rect ):
+            state = "menu"
         collect_pickups()
         gun.update(player, cam)
         hook.update(gun)
@@ -403,10 +440,6 @@ while True:
         for b in blocks:
             b.update()
             b.draw()
-
-        for spike in spikes:
-            spike.update()
-            spike.draw()
 
         for p in pickups:
             p.update()
@@ -423,6 +456,8 @@ while True:
         gun.draw(screen, cam)
         player.draw(screen, cam)
         hook.draw(screen, cam)
+        if end_rect:
+            pygame.draw.rect(screen, (0, 120, 255), cam.apply_rect(end_rect), 3)
 
     pygame.display.flip()
     clock.tick(FPS)
