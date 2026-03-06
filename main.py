@@ -73,29 +73,25 @@ for tile in tile_dicts:
     )
     tile_surfaces.append(surf)
 
-# deze functie laadt het level, spawn en end marker uit json
+def parse_marker(data, key):
+    marker = data.get(key)
+    if isinstance(marker, dict) and "x" in marker and "y" in marker:
+        return int(marker["x"]), int(marker["y"])
+    if isinstance(marker, list) and len(marker) >= 2:
+        return int(marker[0]), int(marker[1])
+    return None
+
+
 def load_level(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         matrix = data.get("level")
-        spawn = None
-        spawn_data = data.get("spawn")
-        if isinstance(spawn_data, dict) and "x" in spawn_data and "y" in spawn_data:
-            spawn = (int(spawn_data["x"]), int(spawn_data["y"]))
-        elif isinstance(spawn_data, list) and len(spawn_data) >= 2:
-            spawn = (int(spawn_data[0]), int(spawn_data[1]))
-
-        end_pos = None
-        end_data = data.get("end")
-        if isinstance(end_data, dict) and "x" in end_data and "y" in end_data:
-            end_pos = (int(end_data["x"]), int(end_data["y"]))
-        elif isinstance(end_data, list) and len(end_data) >= 2:
-            end_pos = (int(end_data[0]), int(end_data[1]))
-
+        spawn = parse_marker(data, "spawn")
+        end_pos = parse_marker(data, "end")
         return matrix, spawn, end_pos
-    except:
+    except (OSError, json.JSONDecodeError, ValueError, TypeError):
         return None, None, None
 
 def build_blocks_from_matrix(matrix):
@@ -127,34 +123,73 @@ def reset_run_state():
     spawn_default_pickups()
 
 
-def is_spike_at_world(x, y):
+def start_level(level_path):
+    global end_rect
+
+    matrix, spawn, end_pos = load_level(level_path)
+    build_blocks_from_matrix(matrix)
+
+    if spawn is not None:
+        player.start_pos = (
+            spawn[0] * grid_size + grid_size // 2,
+            spawn[1] * grid_size + grid_size // 2,
+        )
+
+    if end_pos is not None:
+        end_rect = pygame.Rect(
+            end_pos[0] * grid_size,
+            end_pos[1] * grid_size,
+            grid_size,
+            grid_size,
+        )
+    else:
+        end_rect = None
+
+    reset_run_state()
+
+
+def is_kill_tile(tile_info):
+    return bool(
+        tile_info.get("kill", False)
+        or tile_info.get("spike", False)
+        or tile_info.get("hazard", False)
+    )
+
+
+def get_tile_info_at_world(x, y):
     if not current_level_matrix:
-        return False
+        return None
 
     gx = int(x // grid_size)
     gy = int(y // grid_size)
 
     if gy < 0 or gy >= len(current_level_matrix):
-        return False
+        return None
 
     row = current_level_matrix[gy]
     if gx < 0 or gx >= len(row):
-        return False
+        return None
 
     try:
         raw = int(row[gx])
-    except:
-        return False
+    except (TypeError, ValueError):
+        return None
 
     if raw == EMPTY:
-        return False
+        return None
 
     tile_id = raw - 1
     if tile_id < 0 or tile_id >= len(tile_dicts):
-        return False
+        return None
 
-    info = tile_dicts[tile_id]
-    return bool(info.get("spike", False))
+    return tile_dicts[tile_id]
+
+
+def is_kill_at_world(x, y):
+    tile_info = get_tile_info_at_world(x, y)
+    if tile_info is None:
+        return False
+    return is_kill_tile(tile_info)
 
 bouncing_lock = False
 
@@ -172,30 +207,17 @@ def tile_function_update(prev_vy):
         (player.rect.centerx, player.rect.centery),
     ]
     for px, py in check_points:
-        if is_spike_at_world(px, py):
+        if is_kill_at_world(px, py):
             reset_run_state()
             return
 
     bouncing = False
+    feet = player.rect.move(0, 2)
 
     for tile in blocks:
         info = tile_dicts[tile.tile_id]
 
-        if info.get("spike", False):
-            touch_down = player.rect.move(0, 1)
-            touch_left = player.rect.move(-1, 0)
-            touch_right = player.rect.move(1, 0)
-            if (
-                player.rect.colliderect(tile.rect)
-                or touch_down.colliderect(tile.rect)
-                or touch_left.colliderect(tile.rect)
-                or touch_right.colliderect(tile.rect)
-            ):
-                reset_run_state()
-                return
-
         if info.get("bouncy", False):
-            feet = player.rect.move(0, 2)
             if feet.colliderect(tile.rect):
                 bouncing = True
 
@@ -437,27 +459,8 @@ while True:
                     huidig_level = f"levels/{level_files[level_id]}"
 
                 elif event.key == pygame.K_RETURN:
-                    stopwatch.reset()
-
                     if huidig_level:
-                        matrix, spawn, end_pos = load_level(huidig_level)
-                        build_blocks_from_matrix(matrix)
-                        if spawn is not None:
-                            player.start_pos = (
-                                spawn[0] * grid_size + grid_size // 2,
-                                spawn[1] * grid_size + grid_size // 2,
-                            )
-                        if end_pos is not None:
-                            end_rect = pygame.Rect(
-                                end_pos[0] * grid_size,
-                                end_pos[1] * grid_size,
-                                grid_size,
-                                grid_size,
-                            )
-                        else:
-                            end_rect = None
-                    player.reset_position()
-                    spawn_default_pickups()
+                        start_level(huidig_level)
                     state = "game"
                 elif event.key == pygame.K_ESCAPE:
                     pygame.quit()

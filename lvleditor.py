@@ -61,6 +61,13 @@ placed = {}
 tile_map = {}
 EMPTY = 0
 markers = {"spawn": None, "end": None}
+current_level_id = 1
+
+def get_level_path(level_id):
+    return f"levels/level{level_id}.json"
+
+def get_clear_button_rect():
+    return pygame.Rect(screen.get_width() - 170, 10, 160, 34)
 
 class Blocks(pygame.sprite.Sprite):
     def __init__(self, x, y, gx, gy, tile_id):
@@ -74,8 +81,8 @@ class Blocks(pygame.sprite.Sprite):
     def update(self, offsetx, offsety):
         screen.blit(self.image, (self.rect.x - offsetx, self.rect.y - offsety))
 
-def save_to_json(matrix, markers):
-    with open('levels/level.json', "w", encoding="utf-8") as f:
+def save_to_json(path, matrix, markers):
+    with open(path, "w", encoding="utf-8") as f:
         json.dump({"level": matrix, "spawn": markers["spawn"], "end": markers["end"]}, f, indent=2)
 
 def load_from_json(path):
@@ -85,6 +92,37 @@ def load_from_json(path):
         return data
     except:
         return None
+
+def load_editor_level(level_id):
+    global current_level_id
+
+    current_level_id = level_id
+    loaded_data = load_from_json(get_level_path(level_id))
+    loaded_matrix = loaded_data.get("level") if loaded_data else None
+    build_blocks_from_matrix(loaded_matrix)
+
+    markers["spawn"] = None
+    markers["end"] = None
+
+    if loaded_data:
+        loaded_spawn = loaded_data.get("spawn")
+        if isinstance(loaded_spawn, dict) and "x" in loaded_spawn and "y" in loaded_spawn:
+            markers["spawn"] = [int(loaded_spawn["x"]), int(loaded_spawn["y"])]
+        elif isinstance(loaded_spawn, list) and len(loaded_spawn) >= 2:
+            markers["spawn"] = [int(loaded_spawn[0]), int(loaded_spawn[1])]
+
+        loaded_end = loaded_data.get("end")
+        if isinstance(loaded_end, dict) and "x" in loaded_end and "y" in loaded_end:
+            markers["end"] = [int(loaded_end["x"]), int(loaded_end["y"])]
+        elif isinstance(loaded_end, list) and len(loaded_end) >= 2:
+            markers["end"] = [int(loaded_end[0]), int(loaded_end[1])]
+
+def save_current_level():
+    lvl = make_matrix()
+    lvl = save_lvl(lvl)
+    print_lvl(lvl)
+    save_to_json(get_level_path(current_level_id), lvl, markers)
+
 def build_blocks_from_matrix(matrix):
     placed.clear()
     blocks.empty()
@@ -156,6 +194,13 @@ def erase_tile(gx, gy):
         except ValueError:
             pass
 
+def clear_current_level():
+    placed.clear()
+    blocks.empty()
+    blockorder.clear()
+    markers["spawn"] = None
+    markers["end"] = None
+
 def draw_marker(pos, color):
     if not pos:
         return
@@ -163,22 +208,7 @@ def draw_marker(pos, color):
     r = pygame.Rect(gx*grid_size - offsetx, gy*grid_size - offsety, grid_size, grid_size)
     pygame.draw.rect(screen, color, r, 3)
 
-loaded_data = load_from_json("levels/level.json")
-loaded_matrix = loaded_data.get("level") if loaded_data else None
-build_blocks_from_matrix(loaded_matrix)
-
-if loaded_data:
-    loaded_spawn = loaded_data.get("spawn")
-    if isinstance(loaded_spawn, dict) and "x" in loaded_spawn and "y" in loaded_spawn:
-        markers["spawn"] = [int(loaded_spawn["x"]), int(loaded_spawn["y"])]
-    elif isinstance(loaded_spawn, list) and len(loaded_spawn) >= 2:
-        markers["spawn"] = [int(loaded_spawn[0]), int(loaded_spawn[1])]
-
-    loaded_end = loaded_data.get("end")
-    if isinstance(loaded_end, dict) and "x" in loaded_end and "y" in loaded_end:
-        markers["end"] = [int(loaded_end["x"]), int(loaded_end["y"])]
-    elif isinstance(loaded_end, list) and len(loaded_end) >= 2:
-        markers["end"] = [int(loaded_end[0]), int(loaded_end[1])]
+load_editor_level(current_level_id)
 
 while True:
     for event in pygame.event.get():
@@ -186,6 +216,10 @@ while True:
             pygame.quit()
             sys.exit()
         if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1 and get_clear_button_rect().collidepoint(event.pos):
+                clear_current_level()
+                continue
+
             mousepos = pygame.mouse.get_pos()
             gen_mousepos = (mousepos[0] + offsetx, mousepos[1] + offsety)
             gridx, gridy = gen_mousepos[0] // grid_size, gen_mousepos[1] // grid_size
@@ -206,10 +240,21 @@ while True:
                 selected_block = (selected_block + 1) % len(tile_surfaces)
 
             if event.key == pygame.K_s:
-                lvl = make_matrix()
-                lvl = save_lvl(lvl)
-                print_lvl(lvl)
-                save_to_json(lvl, markers)
+                save_current_level()
+
+            if event.key == pygame.K_n:
+                save_current_level()
+                next_level_id = current_level_id + 1
+                if next_level_id > 10:
+                    next_level_id = 1
+                load_editor_level(next_level_id)
+
+            if event.key == pygame.K_m:
+                save_current_level()
+                next_level_id = current_level_id - 1
+                if next_level_id < 1:
+                    next_level_id = 10
+                load_editor_level(next_level_id)
 
             if event.key == pygame.K_b:  # B = spawn (begin)
                 mx, my = pygame.mouse.get_pos()
@@ -251,9 +296,37 @@ while True:
     for y in range(starty,SCREENSIZE[1],grid_size):
         pygame.draw.line(screen,BLACK,(0,y),(SCREENSIZE[0],y))
 
-    font = pygame.font.SysFont("Arial", 24)
-    text = font.render(f"Selected: {tile_names[selected_block]}", True, BLACK)
+    clear_rect = get_clear_button_rect()
+    pygame.draw.rect(screen, ORANGE, clear_rect)
+    pygame.draw.rect(screen, BLACK, clear_rect, 2)
+
+    title_font = pygame.font.SysFont("Arial", 24)
+    controls_font = pygame.font.SysFont("Arial", 18)
+
+    text = title_font.render(f"Selected: {tile_names[selected_block]}", True, BLACK)
     screen.blit(text, (10, 10))
+    level_text = title_font.render(f"Editing Level: {current_level_id} (N/M)", True, BLACK)
+    screen.blit(level_text, (10, 36))
+
+    controls = [
+        "LMB: place tile",
+        "RMB: erase tile",
+        "Clear All button: delete all",
+        "Z: undo",
+        "1: next tile",
+        "S: save level",
+        "N/M: next/prev level",
+        "B: set spawn",
+        "E: set end",
+        "Arrow keys: scroll",
+    ]
+    start_y = 66
+    for i, line in enumerate(controls):
+        control_text = controls_font.render(line, True, BLACK)
+        screen.blit(control_text, (10, start_y + i * 20))
+
+    clear_text = controls_font.render("CLEAR ALL", True, BLACK)
+    screen.blit(clear_text, clear_text.get_rect(center=clear_rect.center))
     draw_marker(markers["spawn"], (255, 0, 0))  # rood
     draw_marker(markers["end"], (0, 120, 255))  # blauw
 
