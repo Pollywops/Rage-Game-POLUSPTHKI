@@ -12,6 +12,7 @@ pygame.font.init()
 pygame.mixer.init()
 
 font_klein = pygame.font.Font('Fonts/Pixeltype.ttf', 50)
+font_menu = pygame.font.Font('Fonts/Pixeltype.ttf', 30)
 
 fontArial = pygame.font.SysFont("Arial", 72)
 
@@ -23,7 +24,7 @@ FPS = 60
 pygame.font.get_fonts()
 state = "menu"
 
-level_files = sorted([f for f in os.listdir("levels") if f.lower().endswith(".json")])
+level_files = [f"level{i}.json" for i in range(1, 11)]
 level_id = 0
 huidig_level = f"levels/{level_files[level_id]}"
 
@@ -69,32 +70,21 @@ for tile in tile_defs:
     )
     tile_surfaces.append(surf)
 
-# deze functie laadt alle level data uit json (level matrix + optionele spawn)
-def load_level_data(path):
+# deze functie laadt het level en de spawn uit json
+def load_level(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+
+        matrix = data.get("level")
+        spawn = None
+        spawn_data = data.get("spawn")
+        if isinstance(spawn_data, dict) and "x" in spawn_data and "y" in spawn_data:
+            spawn = (int(spawn_data["x"]), int(spawn_data["y"]))
+
+        return matrix, spawn
     except:
-        return None
-
-
-def set_player_spawn_from_level_data(level_data):
-    if not level_data:
-        return
-
-    spawn_data = level_data.get("spawn")
-    if isinstance(spawn_data, dict) and "x" in spawn_data and "y" in spawn_data:
-        spawn_gx = int(spawn_data["x"])
-        spawn_gy = int(spawn_data["y"])
-    elif isinstance(spawn_data, list) and len(spawn_data) >= 2:
-        spawn_gx = int(spawn_data[0])
-        spawn_gy = int(spawn_data[1])
-    else:
-        return
-
-    spawn_x = spawn_gx * grid_size + grid_size // 2
-    spawn_y = spawn_gy * grid_size + grid_size // 2
-    player.start_pos = (spawn_x, spawn_y)
+        return None, None
 
 def build_blocks_from_matrix(matrix):
     blocks.empty()
@@ -129,11 +119,32 @@ def draw_menu(screen):
     screen.blit(hint1, hint1.get_rect(center=(screen.get_width()//2, 360)))
     screen.blit(hint2, hint2.get_rect(center=(screen.get_width()//2, 410)))
 
-    if level_files:
-        lvl_text = font_klein.render(f"Level: {level_files[level_id]}", True, (0, 0, 0))
-    else:
-        lvl_text = font_klein.render("No levels found in /levels", True, (200, 0, 0))
-    screen.blit(lvl_text, lvl_text.get_rect(center=(screen.get_width() // 2, 480)))
+    lvl_text = font_menu.render(f"Selected: Level {level_id + 1}", True, (0, 0, 0))
+    screen.blit(lvl_text, lvl_text.get_rect(center=(screen.get_width() // 2, 200)))
+
+    button_w = 170
+    button_h = 36
+    col_gap = 80
+    row_gap = 12
+    cols = 2
+    rows = 5
+    total_w = cols * button_w + (cols - 1) * col_gap
+    total_h = rows * button_h + (rows - 1) * row_gap
+    start_x = screen.get_width() // 2 - total_w // 2
+    start_y = screen.get_height() // 2 - total_h // 2 + 90
+
+    for i in range(10):
+        col = i % cols
+        row = i // cols
+        rect = pygame.Rect(
+            start_x + col * (button_w + col_gap),
+            start_y + row * (button_h + row_gap),
+            button_w,
+            button_h,
+        )
+        color = GREEN if i == level_id else BLACK
+        txt = font_menu.render(f"Level {i + 1}", True, color)
+        screen.blit(txt, txt.get_rect(center=rect.center))
 
 #CLASSES
 
@@ -297,12 +308,37 @@ while True:
 
         # menu input
         if state == "menu":
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                button_w = 170
+                button_h = 36
+                col_gap = 80
+                row_gap = 12
+                cols = 2
+                rows = 5
+                total_w = cols * button_w + (cols - 1) * col_gap
+                total_h = rows * button_h + (rows - 1) * row_gap
+                start_x = screen.get_width() // 2 - total_w // 2
+                start_y = screen.get_height() // 2 - total_h // 2 + 90
+
+                for i in range(10):
+                    col = i % cols
+                    row = i // cols
+                    rect = pygame.Rect(
+                        start_x + col * (button_w + col_gap),
+                        start_y + row * (button_h + row_gap),
+                        button_w,
+                        button_h,
+                    )
+                    if rect.collidepoint(event.pos):
+                        level_id = i
+                        huidig_level = f"levels/{level_files[level_id]}"
+
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP and level_files:
+                if event.key == pygame.K_UP:
                     level_id = (level_id - 1) % len(level_files)
                     huidig_level = f"levels/{level_files[level_id]}"
 
-                elif event.key == pygame.K_DOWN and level_files:
+                elif event.key == pygame.K_DOWN:
                     level_id = (level_id + 1) % len(level_files)
                     huidig_level = f"levels/{level_files[level_id]}"
 
@@ -310,10 +346,13 @@ while True:
                     stopwatch.reset()
 
                     if huidig_level:
-                        level_data = load_level_data(huidig_level)
-                        matrix = level_data.get("level") if level_data else None
+                        matrix, spawn = load_level(huidig_level)
                         build_blocks_from_matrix(matrix)
-                        set_player_spawn_from_level_data(level_data)
+                        if spawn is not None:
+                            player.start_pos = (
+                                spawn[0] * grid_size + grid_size // 2,
+                                spawn[1] * grid_size + grid_size // 2,
+                            )
                     player.reset_position()
                     spawn_default_pickups()
                     state = "game"

@@ -84,26 +84,6 @@ def save_to_json(matrix):
     with open('levels/level.json', "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2)
 
-def load_from_json(path):
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        lvl = data.get("level")
-        return lvl
-    except Exception as e:
-        return None
-
-
-def load_level_data(path):
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return None
-
-
-tiledata = load_from_json("tiledata.json")
-
 def build_blocks_from_matrix(matrix):
     placed.clear()
     blocks.empty()
@@ -176,19 +156,17 @@ def erase_tile(gx, gy):
             pass
 
 
-tiledata = load_from_json("tiledata.json")
+try:
+    with open("levels/level.json", "r", encoding="utf-8") as f:
+        loaded_data = json.load(f)
+except:
+    loaded_data = None
 
-loaded_data = load_level_data("levels/level.json")
 if loaded_data:
     build_blocks_from_matrix(loaded_data.get("level"))
     loaded_spawn = loaded_data.get("spawn")
     if isinstance(loaded_spawn, dict) and "x" in loaded_spawn and "y" in loaded_spawn:
         spawn_pos = (int(loaded_spawn["x"]), int(loaded_spawn["y"]))
-    elif isinstance(loaded_spawn, list) and len(loaded_spawn) >= 2:
-        spawn_pos = (int(loaded_spawn[0]), int(loaded_spawn[1]))
-else:
-    loaded = load_from_json("levels/level.json")
-    build_blocks_from_matrix(loaded)
 
 while True:
     for event in pygame.event.get():
