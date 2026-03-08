@@ -2,7 +2,8 @@
   "tiles": [
     { "name": "aarde", "file": "Aarde_Midden.png", "solid": true },
     { "name": "gras", "file": "Gras_Top.png", "solid": true },
-    { "name": "spike", "file": "spike.png", "solid": false, "spike": true, "kill": true },
-    {"name":  "bouncy", "file":  "bouncy.png", "solid":  true, "bouncy":  true, "strength": 1}
+    { "name": "spike", "file": "spike.png", "solid": true, "spike": true, "kill": true },
+    {"name":  "bouncy", "file":  "bouncy.png", "solid":  true, "bouncy":  true, "strength": 1},
+    {"name":  "super_bullet", "file":  "super_pellet2.png", "solid": false, "super_pickup": true}
   ]
 }

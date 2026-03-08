@@ -194,7 +194,6 @@ def is_kill_at_world(x, y):
 bouncing_lock = False
 
 def tile_function_update(prev_vy):
-    global bouncing_lock
 
     check_points = [
         (player.rect.left + 1, player.rect.top + 1),
@@ -292,8 +291,8 @@ class Pickup(pygame.sprite.Sprite):
                 (grid_size, grid_size),
             )
         else:
-            self.image = pygame.Surface((grid_size, grid_size), pygame.SRCALPHA)
-            self.image.fill((180, 60, 255))
+            self.image = pygame.image.load('textures/super_pellet2.png').convert_alpha()
+
 
         self.rect = self.image.get_rect(topleft=(gx * grid_size, gy * grid_size))
 
