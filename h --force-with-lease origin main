@@ -1,0 +1,25 @@
+* [33mf24a963[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m sigma nieuwste nieuwste commit, nieuwe level nigga
+[31m|[m *   [33m39481ae[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m spijk slehcte merge
+[31m|[m [32m|[m[31m\[m  
+[31m|[m [32m|[m[31m/[m  
+[31m|[m[31m/[m[32m|[m   
+* [32m|[m [33mbcd633a[m nieuwste commit
+* [32m|[m [33ma6062b1[m de goede push 2 niet die hieronder gebruiken
+* [32m|[m [33m4590dec[m bouncy blocks, lvls, pickups, end start blocks merge
+* [32m|[m   [33m9375d54[m beter menu en level kiezer
+[34m|[m[35m\[m [32m\[m  
+[34m|[m * [32m|[m [33md65c3da[m 1e versie van bounce blocks toegevoegd, 2e versie komt eraan
+* [35m|[m [32m|[m [33m406c421[m betere menu en levels
+[35m|[m[35m/[m [32m/[m  
+* [32m|[m [33m61adce0[m nigga commit
+* [32m|[m [33m0f372aa[m spike function toegevoegd
+* [32m|[m [33m54f01f7[m tile id's vervangen voor tiledata.json
+* [32m|[m [33m32a5b6e[m textures verwijderd
+* [32m|[m [33m950e13b[m Merge remote-tracking branch 'origin/main'
+* [32m|[m [33m7c3d7f0[m Rename spike.png to textures/spike.png
+* [32m|[m [33md1eea8b[m Add files via upload
+* [32m|[m [33m6e39a8c[m super bullets pickup big nigga
+* [32m|[m [33m3bcbeee[m Refactor gun shooting mechanics and sound handling
+* [32m|[m [33m87ef853[m Enhance camera.py with Dutch comments
+* [32m|[m [33m318e738[m Add files via upload
+* [32m|[m [33mb46cbc1[m Add files via upload

@@ -39,6 +39,7 @@ cam_y = 0
 scroll_speed = 8
 selected_tile = 0
 current_level = 1
+MAX_LEVEL = 20
 
 title_font = pygame.font.SysFont("Arial", 24)
 small_font = pygame.font.SysFont("Arial", 18)
@@ -140,7 +141,7 @@ while True:
             elif event.key == pygame.K_n:
                 save_level()
                 current_level += 1
-                if current_level > 10:
+                if current_level > MAX_LEVEL:
                     current_level = 1
                 load_level(current_level)
 
@@ -148,7 +149,7 @@ while True:
                 save_level()
                 current_level -= 1
                 if current_level < 1:
-                    current_level = 10
+                    current_level = MAX_LEVEL
                 load_level(current_level)
 
             elif event.key == pygame.K_z:

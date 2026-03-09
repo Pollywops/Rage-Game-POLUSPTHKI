@@ -37,17 +37,24 @@ menu_loop = "sounds/main_menu_loop.ogg"
 ingame_intro = "sounds/ingame_intro.ogg"
 ingame_loop = "sounds/ingame_loop.ogg"
 
+#SFX
+lvl_switch = pygame.mixer.Sound("sounds/Switch1.wav")
+page_switch = pygame.mixer.Sound("sounds/Page_turn.wav")
+page_not_found = pygame.mixer.Sound("sounds/error_sound2.mp3")
+
 SCREENSIZE = [800,800]
 EMPTY = 0
 FPS = 60
 pygame.font.get_fonts()
 state = "menu"
 
-level_files = [f"level{i}.json" for i in range(1, 11)]
+level_files = [f"level{i}.json" for i in range(1, 21)]
 level_id = 0
 huidig_level = f"levels/{level_files[level_id]}"
 end_rect = None
 current_level_matrix = None
+menu_page = 0
+LEVELS_PER_PAGE = 10
 
 ##########COLORS##############
 RED = (255,0,0)
@@ -94,6 +101,7 @@ pygame.mixer.music.set_endevent(MUSIC_ENDEVENT)
 current_music_state = None
 current_loop = None
 music_phase = None   # "intro" of "loop"
+
 
 def start_music(state_name):
     global current_music_state, current_loop, music_phase
@@ -267,43 +275,44 @@ def tile_function_update(prev_vy):
 
 
 def draw_menu(screen):
+    """
+    Draws a level selection menu with numbered buttons.
+    Shows 10 levels per page.
+    """
+
     screen.fill((125, 190, 255))
 
     title = font_klein.render("Rage Game", True, (0, 0, 0))
-    hint1 = font_klein.render("ENTER = Play", True, (0, 0, 0))
-    hint2 = font_klein.render("ESC = Quit", True, (0, 0, 0))
+    screen.blit(title, (screen.get_width() // 2 - title.get_width() // 2, 80))
 
-    screen.blit(title, title.get_rect(center=(screen.get_width()//2, 120)))
-    screen.blit(hint1, hint1.get_rect(center=(screen.get_width()//2, 360)))
-    screen.blit(hint2, hint2.get_rect(center=(screen.get_width()//2, 410)))
-    screen.blit(hint3, settings_rect)
+    page_text = font_menu.render(f"Page {menu_page + 1}", True, BLACK)
+    screen.blit(page_text, (screen.get_width() // 2 - page_text.get_width() // 2, 140))
 
-    lvl_text = font_menu.render(f"Selected: Level {level_id + 1}", True, (0, 0, 0))
-    screen.blit(lvl_text, lvl_text.get_rect(center=(screen.get_width() // 2, 200)))
+    start_y = 200
+    button_w = 80
+    button_h = 40
 
-    button_w = 170
-    button_h = 36
-    col_gap = 80
-    row_gap = 12
-    cols = 2
-    rows = 5
-    total_w = cols * button_w + (cols - 1) * col_gap
-    total_h = rows * button_h + (rows - 1) * row_gap
-    start_x = screen.get_width() // 2 - total_w // 2
-    start_y = screen.get_height() // 2 - total_h // 2 + 90
+    start_index = menu_page * LEVELS_PER_PAGE
+    end_index = min(start_index + LEVELS_PER_PAGE, len(level_files))
 
-    for i in range(10):
-        col = i % cols
-        row = i // cols
-        rect = pygame.Rect(
-            start_x + col * (button_w + col_gap),
-            start_y + row * (button_h + row_gap),
-            button_w,
-            button_h,
-        )
-        color = GREEN if i == level_id else BLACK
-        txt = font_menu.render(f"Level {i + 1}", True, color)
-        screen.blit(txt, txt.get_rect(center=rect.center))
+    for button_index, level_index in enumerate(range(start_index, end_index)):
+        x = screen.get_width() // 2 - button_w // 2
+        y = start_y + button_index * 50
+
+        rect = pygame.Rect(x, y, button_w, button_h)
+
+        if level_index == level_id:
+            pygame.draw.rect(screen, GREEN, rect)
+        else:
+            pygame.draw.rect(screen, WHITE, rect)
+
+        pygame.draw.rect(screen, BLACK, rect, 2)
+
+        text = font_menu.render(str(level_index + 1), True, BLACK)
+        screen.blit(text, text.get_rect(center=rect.center))
+
+    hint = font_menu.render("LEFT/RIGHT = page   UP/DOWN = level   ENTER = play", True, BLACK)
+    screen.blit(hint, hint.get_rect(center=(screen.get_width() // 2, 740)))
 
 def draw_settings(screen):
 
@@ -455,38 +464,61 @@ while True:
         # menu input
         if state == "menu":
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                button_w = 170
-                button_h = 36
-                col_gap = 80
-                row_gap = 12
-                cols = 2
-                rows = 5
-                total_w = cols * button_w + (cols - 1) * col_gap
-                total_h = rows * button_h + (rows - 1) * row_gap
-                start_x = screen.get_width() // 2 - total_w // 2
-                start_y = screen.get_height() // 2 - total_h // 2 + 90
+                button_w = 80
+                button_h = 40
+                start_y = 200
 
-                for i in range(10):
-                    col = i % cols
-                    row = i // cols
-                    rect = pygame.Rect(
-                        start_x + col * (button_w + col_gap),
-                        start_y + row * (button_h + row_gap),
-                        button_w,
-                        button_h,
-                    )
+                start_index = menu_page * LEVELS_PER_PAGE
+                end_index = min(start_index + LEVELS_PER_PAGE, len(level_files))
+
+                for button_index, level_index in enumerate(range(start_index, end_index)):
+                    x = screen.get_width() // 2 - button_w // 2
+                    y = start_y + button_index * 50
+                    rect = pygame.Rect(x, y, button_w, button_h)
+
                     if rect.collidepoint(event.pos):
-                        level_id = i
+                        level_id = level_index
                         huidig_level = f"levels/{level_files[level_id]}"
+                        lvl_switch.play()
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
-                    level_id = (level_id - 1) % len(level_files)
-                    huidig_level = f"levels/{level_files[level_id]}"
+                    if level_id > 0:
+                        level_id -= 1
+                        huidig_level = f"levels/{level_files[level_id]}"
+                        lvl_switch.play()
 
+                        # automatically switch page if needed
+                        menu_page = level_id // LEVELS_PER_PAGE
                 elif event.key == pygame.K_DOWN:
-                    level_id = (level_id + 1) % len(level_files)
-                    huidig_level = f"levels/{level_files[level_id]}"
+                     if level_id < len(level_files) - 1:
+                        level_id += 1
+                        huidig_level = f"levels/{level_files[level_id]}"
+                        lvl_switch.play()
+
+                        # automatically switch page if needed
+                        menu_page = level_id // LEVELS_PER_PAGE
+
+                elif event.key == pygame.K_RIGHT:
+                    max_page = (len(level_files) - 1) // LEVELS_PER_PAGE
+                    if menu_page < max_page:
+                        menu_page += 1
+                        level_id = menu_page * LEVELS_PER_PAGE
+                        huidig_level = f"levels/{level_files[level_id]}"
+                        page_switch.play()
+                    else:
+                        page_not_found.play()
+
+                elif event.key == pygame.K_LEFT:
+                    if menu_page > 0:
+                        menu_page -= 1
+                        level_id = menu_page * LEVELS_PER_PAGE
+                        huidig_level = f"levels/{level_files[level_id]}"
+                        page_switch.play()
+                    else:
+                        page_not_found.play()
+
+
 
                 elif event.key == pygame.K_RETURN:
                     if huidig_level:
