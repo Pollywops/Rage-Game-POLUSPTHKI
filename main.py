@@ -203,24 +203,23 @@ bouncing_lock = False
 def tile_function_update(prev_vy):
     global bouncing_lock
     bouncing = False
-    hitbox = player.rect.inflate(10,10)
 
     for tile in blocks:
         info = tile_dicts[tile.tile_id]
 
         if info.get("bouncy", False):
-            if hitbox.colliderect(tile.rect):
+            if player.hitbox.colliderect(tile.rect):
                 bouncing = True
 
                 if not bouncing_lock:
                     player.vely = -1*(prev_vy)
                     bouncing_lock = True
         elif info.get("super_pickup", False):
-            if hitbox.colliderect(tile.rect):
+            if player.hitbox.colliderect(tile.rect):
                 tile.kill()
                 gun.activate_super_shots(2)
         elif info.get("spike", False):
-            if hitbox.colliderect(tile.rect):
+            if player.hitbox_spike.colliderect(tile.rect):
                 start_level(huidig_level)
                 lowest = create_low_border()
                 reset_run_state()

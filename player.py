@@ -20,6 +20,7 @@ class Player(pygame.sprite.Sprite):
         self.touchingceiling = False
         self.friction = 1
 
+
     def add_vel(self, x, y):
         self.velx += x
         self.vely += y
@@ -28,6 +29,8 @@ class Player(pygame.sprite.Sprite):
         self.touchingground = False
         self.touchingwall = False
         self.touchingceiling = False
+        self.hitbox_spike = self.rect.inflate(-10,-10)
+        self.hitbox = self.rect.inflate(10,10)
 
         self.vely += 0.35
         self.friction = 1
