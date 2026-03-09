@@ -16,6 +16,20 @@ font_menu = pygame.font.Font('Fonts/Pixeltype.ttf', 30)
 
 fontArial = pygame.font.SysFont("Arial", 72)
 
+volume = 100
+
+hint3 = font_klein.render("Settings", True, (0, 0, 0))
+settings_rect = hint3.get_rect(topright=(770, 50))
+
+home = font_klein.render("Home", True, (0, 0, 0))
+homeknp_rect = home.get_rect(topleft=(30,50))
+
+plus_text = font_klein.render("+", True, (0, 0, 0))
+plus_rect = plus_text.get_rect()
+
+min_text = font_klein.render("-", True, (0, 0, 0))
+min_rect = min_text.get_rect()
+
 
 pygame.mixer.set_num_channels(40)
 SCREENSIZE = [800,800]
@@ -216,7 +230,7 @@ def tile_function_update(prev_vy):
 
 
 def draw_menu(screen):
-    screen.fill((255, 255, 255))
+    screen.fill((125, 190, 255))
 
     title = font_klein.render("Rage Game", True, (0, 0, 0))
     hint1 = font_klein.render("ENTER = Play", True, (0, 0, 0))
@@ -225,6 +239,7 @@ def draw_menu(screen):
     screen.blit(title, title.get_rect(center=(screen.get_width()//2, 120)))
     screen.blit(hint1, hint1.get_rect(center=(screen.get_width()//2, 360)))
     screen.blit(hint2, hint2.get_rect(center=(screen.get_width()//2, 410)))
+    screen.blit(hint3, settings_rect)
 
     lvl_text = font_menu.render(f"Selected: Level {level_id + 1}", True, (0, 0, 0))
     screen.blit(lvl_text, lvl_text.get_rect(center=(screen.get_width() // 2, 200)))
@@ -252,6 +267,26 @@ def draw_menu(screen):
         color = GREEN if i == level_id else BLACK
         txt = font_menu.render(f"Level {i + 1}", True, color)
         screen.blit(txt, txt.get_rect(center=rect.center))
+
+def draw_settings(screen):
+
+    screen.fill((125, 190, 225))
+
+    # tekst
+    volume_text = font_klein.render("Volume" + str(volume), True, (0, 0, 0))
+    volume_rect = volume_text.get_rect(center=(400, 300))
+
+    # plus links
+    plus_rect.midright = (volume_rect.left - 10, volume_rect.centery)
+
+    # min rechts
+    min_rect.midleft = (volume_rect.right + 10, volume_rect.centery)
+
+    screen.blit(home, homeknp_rect)
+    screen.blit(volume_text, volume_rect)
+    screen.blit(plus_text, plus_rect)
+    screen.blit(min_text, min_rect)
+
 
 #CLASSES
 
@@ -375,6 +410,7 @@ while True:
 
         # menu input
         if state == "menu":
+
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 button_w = 170
                 button_h = 36
@@ -446,6 +482,10 @@ while True:
     if state == "menu":
         draw_menu(screen)
 
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if settings_rect.collidepoint(event.pos):
+                state = "settings"
+
     elif state == "game":
         screen.fill(WHITE)
 
@@ -480,6 +520,21 @@ while True:
         hook.draw(screen, cam)
         if end_rect:
             pygame.draw.rect(screen, (0, 120, 255), cam.apply_rect(end_rect), 3)
+
+    elif state == "settings":
+        if homeknp_rect.collidepoint(event.pos):
+            state = "menu"
+        if plus_rect.collidepoint(event.pos):
+
+            if volume < 100:
+                volume += 1
+                pygame.mixer.music.set_volume(volume / 100)
+
+        if min_rect.collidepoint(event.pos):
+
+            if volume > 0:
+                volume -= 1
+                pygame.mixer.music.set_volume(volume / 100)
 
     pygame.display.flip()
     clock.tick(FPS)
