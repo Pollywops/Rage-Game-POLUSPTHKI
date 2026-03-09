@@ -61,7 +61,7 @@ class Gun(pygame.sprite.Sprite):
                 if player.vely > 0:
                     # Stopt neerwaarste snelheid
                     player.vely = 0
-                    print(player.vely)
+                    #print(player.vely)
 
             # Berkent de recoil
             # Stuurt de speler de andere kant op

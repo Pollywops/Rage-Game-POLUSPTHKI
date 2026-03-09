@@ -49,19 +49,16 @@ screen = pygame.display.set_mode(SCREENSIZE,flags=pygame.RESIZABLE, vsync=1)
 clock = pygame.time.Clock()
 player_group = pygame.sprite.GroupSingle()
 gun_group = pygame.sprite.GroupSingle()
-projectiles = pygame.sprite.Group()
 blocks = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
-pickups = pygame.sprite.Group()
 
 grid_size = 32
+lowest = 0
 
 with open("tiledata.json", "r") as f:
     tiledata = json.load(f)
 
 tile_dicts = tiledata["tiles"]
-for i, t in enumerate(tile_dicts):
-    print("TILE", i+1, t.get("name"), t.get("file"))
 
 tile_surfaces = []
 
@@ -111,7 +108,18 @@ def build_blocks_from_matrix(matrix):
             if 0 <= tile_id < len(tile_surfaces):
                 tile = Tile(x, y, tile_id)
                 blocks.add(tile)
+                info = tile_dicts[tile.tile_id]
+                if info.get("spike", False):
+                    tile.rect.inflate_ip(-8, -4)
+                    print('gelukt')
 
+def create_low_border():
+    tiles = blocks.sprites()
+    lowest = None
+    for tile in tiles:
+        if lowest is None or tile.rect.bottom > lowest:
+            lowest = tile.rect.bottom
+    return lowest
 
 def reset_run_state():
     player.reset_position()
@@ -120,7 +128,6 @@ def reset_run_state():
     gun.super_shots_left = 0
     hook.hooking = False
     stopwatch.reset()
-    spawn_default_pickups()
 
 
 def start_level(level_path):
@@ -146,14 +153,6 @@ def start_level(level_path):
         end_rect = None
 
     reset_run_state()
-
-
-def is_kill_tile(tile_info):
-    return bool(
-        tile_info.get("kill", False)
-        or tile_info.get("spike", False)
-        or tile_info.get("hazard", False)
-    )
 
 
 def get_tile_info_at_world(x, y):
@@ -185,45 +184,33 @@ def get_tile_info_at_world(x, y):
     return tile_dicts[tile_id]
 
 
-def is_kill_at_world(x, y):
-    tile_info = get_tile_info_at_world(x, y)
-    if tile_info is None:
-        return False
-    return is_kill_tile(tile_info)
-
 bouncing_lock = False
 
 def tile_function_update(prev_vy):
-
-    check_points = [
-        (player.rect.left + 1, player.rect.top + 1),
-        (player.rect.right - 1, player.rect.top + 1),
-        (player.rect.left + 1, player.rect.centery),
-        (player.rect.right - 1, player.rect.centery),
-        (player.rect.left + 2, player.rect.bottom - 1),
-        (player.rect.centerx, player.rect.bottom - 1),
-        (player.rect.right - 2, player.rect.bottom - 1),
-        (player.rect.centerx, player.rect.centery),
-    ]
-    for px, py in check_points:
-        if is_kill_at_world(px, py):
-            reset_run_state()
-            return
-
+    global bouncing_lock
     bouncing = False
-    feet = player.rect.move(0, 2)
+    hitbox = player.rect.inflate(10,10)
 
     for tile in blocks:
         info = tile_dicts[tile.tile_id]
 
         if info.get("bouncy", False):
-            if feet.colliderect(tile.rect):
+            if hitbox.colliderect(tile.rect):
                 bouncing = True
 
-                if (not bouncing_lock) and prev_vy > 0:
-                    strength = info.get("strength", 1.5)
-                    player.vely = -max(6, prev_vy) * strength
+                if not bouncing_lock:
+                    player.vely = -1*(prev_vy)
                     bouncing_lock = True
+        elif info.get("super_pickup", False):
+            if hitbox.colliderect(tile.rect):
+                tile.kill()
+                gun.activate_super_shots(2)
+        elif info.get("spike", False):
+            if hitbox.colliderect(tile.rect):
+                start_level(huidig_level)
+                lowest = create_low_border()
+                reset_run_state()
+
     if not bouncing:
         bouncing_lock = False
 
@@ -274,46 +261,11 @@ class Tile(pygame.sprite.Sprite):
         super().__init__()
         self.tile_id = tile_id
         self.image = tile_surfaces[self.tile_id]
+        self.info = tile_dicts[tile_id]
         self.rect = self.image.get_rect(topleft=(gx * grid_size, gy * grid_size))
 
     def draw(self):
         screen.blit(self.image, cam.apply_rect(self.rect))
-
-#dit is de class voor de bullet pick ups
-class Pickup(pygame.sprite.Sprite):
-    def __init__(self, gx, gy, kind="super", image_path=None):
-        super().__init__()
-        self.kind = kind
-
-        if image_path:
-            self.image = pygame.transform.scale(
-                pygame.image.load(image_path).convert_alpha(),
-                (grid_size, grid_size),
-            )
-        else:
-            self.image = pygame.image.load('textures/super_pellet2.png').convert_alpha()
-
-
-        self.rect = self.image.get_rect(topleft=(gx * grid_size, gy * grid_size))
-
-    def update(self):
-        pass
-
-    def draw(self):
-        screen.blit(self.image, cam.apply_rect(self.rect))
-
-
-def spawn_default_pickups():
-    pickups.empty()
-    pickups.add(Pickup(8, 8, "super"))
-    pickups.add(Pickup(14, 6, "super"))
-
-
-def collect_pickups():
-    hits = pygame.sprite.spritecollide(player, pickups, True)
-    for pickup in hits:
-        if pickup.kind == "super":
-            gun.activate_super_shots(2)
 
 
 # dit is de class om de stopwatch te maken, deze kan worden gestart, gereset en de tijd kan worden opgevraagd in seconden of in een string in het formaat mm:ss.ms
@@ -460,6 +412,7 @@ while True:
                 elif event.key == pygame.K_RETURN:
                     if huidig_level:
                         start_level(huidig_level)
+                        lowest = create_low_border()
                     state = "game"
                 elif event.key == pygame.K_ESCAPE:
                     pygame.quit()
@@ -478,17 +431,18 @@ while True:
                     if gun.bullet_type == 'SUPER':
                         gun.bullet_type = 'NORMAL'
                         gun.super_shots_left = 0
-                        gun.bullets = 2
-                        print("NORMAL BULLET ACTIVATED")
+                        #print("NORMAL BULLET ACTIVATED")
                     else:
                         gun.activate_super_shots(2)
-                        print("SUPER BULLET ACTIVATED")
+                        #print("SUPER BULLET ACTIVATED")
                 elif event.key == pygame.K_t:
+                    start_level(huidig_level)
+                    lowest = create_low_border()
                     reset_run_state()
                 elif event.key == pygame.K_h:
                     hook.hook(Projectile())
 
-    #draw en update
+    # draw en update
     if state == "menu":
         draw_menu(screen)
 
@@ -499,20 +453,19 @@ while True:
 
         old_vy = player.vely
         player.update(blocks, gun)
+        if player.rect.bottom > lowest + 300:
+            start_level(huidig_level)
+            lowest = create_low_border()
+            reset_run_state()
         tile_function_update(old_vy)
-        if end_rect and player.rect.colliderect(end_rect ):
+        if end_rect and player.rect.colliderect(end_rect):
             state = "menu"
-        collect_pickups()
         gun.update(player, cam)
         hook.update(gun)
 
         for b in blocks:
             b.update()
             b.draw()
-
-        for p in pickups:
-            p.update()
-            p.draw()
 
         button1.text = 'BULLETS: ' + str(gun.bullets)
         button2.text = 'BULLET TYPE: ' + str(gun.bullet_type)

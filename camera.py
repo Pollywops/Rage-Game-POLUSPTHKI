@@ -16,15 +16,15 @@ class Camera:
     def update_center(self, target_rect):
         # Zorgt dat de camera bij de speler blijft
 
-        self.offset.x = target_rect.centerx - self.screen_w / 2
+        self.offset.x = target_rect.centerx - self.screen_w / 2 + 200
         self.offset.y = target_rect.centery - self.screen_h / 2
         # Berekent hoeveel de camera moet verschuiven
 
     def apply_rect(self, rect):
         # Past een rect aan op basis van de camera offset
         # Hiermee tekent de speler op de juiste plek op het scherm
-
         return rect.move(-self.offset.x, -self.offset.y)
+
 
     def apply_mouse(self):
         # Zet de muispositie om naar wereldpositie

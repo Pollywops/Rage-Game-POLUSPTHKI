@@ -34,29 +34,28 @@ class Player(pygame.sprite.Sprite):
 
         self.rect.centerx += self.velx
         for sprite in pygame.sprite.spritecollide(self, blocks, False):
-            if self.rect.colliderect(sprite.rect):
+            if self.rect.colliderect(sprite.rect) and not sprite.info.get("super_pickup") and not sprite.info.get("bouncy"):
                 if self.velx > 0:
                     self.rect.right = sprite.rect.left
                     self.velx = 0
                 elif self.velx < 0:
                     self.rect.left = sprite.rect.right
                     self.velx = 0
-            gun.bullets = 3
+            gun.bullets = 2
         self.rect.centery += self.vely
         for sprite in pygame.sprite.spritecollide(self, blocks, False):
-            if self.rect.colliderect(sprite.rect):
+            if self.rect.colliderect(sprite.rect) and not sprite.info.get("super_pickup") and not sprite.info.get("bouncy"):
                 if self.vely > 0:
                     self.rect.bottom = sprite.rect.top
                     self.vely = 0
                     self.touchingground = True
                     self.friction = 30
-                    # print(self.friction)
                 elif self.vely < 0:
                     self.rect.top = sprite.rect.bottom
                     self.vely = 0
                     self.touchingceiling = True
                     self.friction = 30
-            gun.bullets = 3
+            gun.bullets = 2
 
         if self.velx > 0:
             if self.velx <= 0.005:
