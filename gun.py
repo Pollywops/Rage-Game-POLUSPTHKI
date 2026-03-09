@@ -7,6 +7,7 @@ if not pygame.mixer.get_init():
 
 # Geluids effecten
 shotgun_shot = pygame.mixer.Sound('sounds/Shotgun_shot.mp3')
+shotgun_shot.set_volume(0.2)
 shotgun_empty = pygame.mixer.Sound('sounds/Empty.mp3')
 
 # Kracht op basis van kogel

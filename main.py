@@ -32,6 +32,11 @@ min_rect = min_text.get_rect()
 
 
 pygame.mixer.set_num_channels(40)
+menu_intro = ("sounds/main_menu_intro.ogg")
+menu_loop = "sounds/main_menu_loop.ogg"
+ingame_intro = "sounds/ingame_intro.ogg"
+ingame_loop = "sounds/ingame_loop.ogg"
+
 SCREENSIZE = [800,800]
 EMPTY = 0
 FPS = 60
@@ -83,6 +88,38 @@ for tile in tile_dicts:
         (grid_size, grid_size)
     )
     tile_surfaces.append(surf)
+MUSIC_ENDEVENT = pygame.USEREVENT + 1
+pygame.mixer.music.set_endevent(MUSIC_ENDEVENT)
+
+current_music_state = None
+current_loop = None
+music_phase = None   # "intro" of "loop"
+
+def start_music(state_name):
+    global current_music_state, current_loop, music_phase
+
+    if current_music_state == state_name:
+        return
+
+    current_music_state = state_name
+
+    if state_name == "menu":
+        intro = menu_intro
+        loop = menu_loop
+    elif state_name == "game":
+        intro = ingame_intro
+        loop = ingame_loop
+    else:
+        return
+
+    current_loop = loop
+    music_phase = "intro"
+
+    pygame.mixer.music.stop()
+    pygame.mixer.music.load(intro)
+    pygame.mixer.music.play()
+    pygame.mixer.music.queue(loop)
+
 
 def parse_marker(data, key):
     marker = data.get(key)
@@ -220,6 +257,7 @@ def tile_function_update(prev_vy):
                 gun.activate_super_shots(2)
         elif info.get("spike", False):
             if player.hitbox_spike.colliderect(tile.rect):
+
                 start_level(huidig_level)
                 lowest = create_low_border()
                 reset_run_state()
@@ -285,7 +323,6 @@ def draw_settings(screen):
     screen.blit(volume_text, volume_rect)
     screen.blit(plus_text, plus_rect)
     screen.blit(min_text, min_rect)
-
 
 #CLASSES
 
@@ -393,6 +430,7 @@ button3 = Button(500,150, 175, 30, True, GREEN,
 hook = Hook()
 
 buttons.add(button1,button2,button3)
+start_music("menu")
 
 # dit is de grote game loop, hier worden alle events afgehandeld, het scherm wordt geupdate en getekend.
 while True:
@@ -402,6 +440,13 @@ while True:
             pygame.quit()
             sys.exit()
 
+        if event.type == MUSIC_ENDEVENT:
+            if music_phase == "intro":
+                music_phase = "loop"
+            else:
+                pygame.mixer.music.load(current_loop)
+                pygame.mixer.music.play(-1)
+
         if event.type == pygame.VIDEORESIZE:
             SCREENSIZE = [event.w, event.h]
             cam.resize(SCREENSIZE)
@@ -409,7 +454,6 @@ while True:
 
         # menu input
         if state == "menu":
-
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 button_w = 170
                 button_h = 36
@@ -448,7 +492,8 @@ while True:
                     if huidig_level:
                         start_level(huidig_level)
                         lowest = create_low_border()
-                    state = "game"
+                        start_music("game")
+                        state = "game"
                 elif event.key == pygame.K_ESCAPE:
                     pygame.quit()
                     sys.exit()
@@ -462,6 +507,7 @@ while True:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     state = "menu"
+                    start_music('menu')
                 elif event.key == pygame.K_r:
                     if gun.bullet_type == 'SUPER':
                         gun.bullet_type = 'NORMAL'
@@ -486,6 +532,10 @@ while True:
                 state = "settings"
 
     elif state == "game":
+        if not pygame.mixer.music.get_busy():
+            pygame.mixer.music.load(current_loop)
+            pygame.mixer.music.play(-1)
+
         screen.fill(WHITE)
 
         cam.update_center(player.rect)
@@ -499,6 +549,7 @@ while True:
         tile_function_update(old_vy)
         if end_rect and player.rect.colliderect(end_rect):
             state = "menu"
+            start_music('menu')
         gun.update(player, cam)
         hook.update(gun)
 
