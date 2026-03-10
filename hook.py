@@ -1,23 +1,32 @@
-import pygame
+import pygame, math
 
-class Hook(pygame.sprite.Sprite):
-    def __init__(self):
+class HProjectile(pygame.sprite.Sprite):
+    def __init__(self, x, y, w, h, angle, speed):
         super().__init__()
-        self.surface = pygame.surface.Surface((10, 10))
-        self.surface.fill((255,255,0))
-        self.rect = self.surface.get_rect()
-        self.hooking = False
-    def update(self, gun):
-        self.rect.centerx, self.rect.centery = gun.rect.center
-        self.angle = gun.angle
-        self.transformed_image = pygame.transform.rotate(self.surface, gun.deg)
-        if self.hooking:
-            self.pro.update()
-    def hook(self, projectile):
-        self.pro = projectile
-        self.pro.start(self.rect.centerx, self.rect.centery, 10 ,10, self.angle, 30)
-        self.hooking = True
+        self.image = pygame.Surface((w, h))
+        self.rect = self.image.get_rect()
+        self.image.fill((0, 0, 0))
+        self.pos = pygame.Vector2(x, y)
+        self.rect.center = (round(self.pos.x), round(self.pos.y))
+        self.angle = angle
+        self.speed = 15
+        self.ancored = False
+
+    def update(self, blocks, player, cam, screen):
+        if not self.ancored:
+            self.pos.x += math.cos(self.angle) * self.speed
+            self.pos.y += math.sin(self.angle) * self.speed
+            self.rect.center = (round(self.pos.x), round(self.pos.y))
+
+            for i in blocks.sprites():
+                if self.rect.colliderect(i.rect):
+                    self.ancored = True
+                    player.rope(self.rect.center)
+                    break
+
+        start = pygame.Vector2(cam.apply_rect(player.rect).center)
+        end = pygame.Vector2(cam.apply_rect(self.rect).center)
+        pygame.draw.line(screen, (0, 0, 0), start, end, 3)
+
     def draw(self, screen, cam):
-        #screen.blit(self.transformed_image, cam.apply_rect(self.rect))
-        if self.hooking:
-            self.pro.draw(screen, cam)
+        screen.blit(self.image, cam.apply_rect(self.rect))
