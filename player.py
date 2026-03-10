@@ -19,11 +19,14 @@ class Player(pygame.sprite.Sprite):
         self.touchingwall = False
         self.touchingceiling = False
         self.friction = 1
+        self.shotTimer = 50
+        self.shooting = False
 
 
     def add_vel(self, x, y):
         self.velx += x
         self.vely += y
+        self.shooting = True
 
     def physics(self, blocks, gun):
         self.touchingground = False
@@ -41,9 +44,11 @@ class Player(pygame.sprite.Sprite):
                 if self.velx > 0:
                     self.rect.right = sprite.rect.left
                     self.velx = 0
+                    self.touchingwall = True
                 elif self.velx < 0:
                     self.rect.left = sprite.rect.right
                     self.velx = 0
+                    self.touchingwall = True
             gun.bullets = 2
         self.rect.centery += self.vely
         for sprite in pygame.sprite.spritecollide(self, blocks, False):
@@ -79,6 +84,10 @@ class Player(pygame.sprite.Sprite):
 
     def update(self, blocks, gun):
         self.physics(blocks, gun)
+        if self.shooting:
+            self.shotTimer -=1
+            if self.touchingwall == False and self.shotTimer > 0:
+                pass
 
     def draw(self, screen, cam):
         screen.blit(self.image, cam.apply_rect(self.rect))

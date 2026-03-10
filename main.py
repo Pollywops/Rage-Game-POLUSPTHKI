@@ -137,7 +137,6 @@ def parse_marker(data, key):
         return int(marker[0]), int(marker[1])
     return None
 
-
 def load_level(path):
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -146,17 +145,20 @@ def load_level(path):
         matrix = data.get("level")
         spawn = parse_marker(data, "spawn")
         end_pos = parse_marker(data, "end")
-        return matrix, spawn, end_pos
+        offset = data.get("offset", [0, 0])
+        return matrix, spawn, end_pos, offset
     except (OSError, json.JSONDecodeError, ValueError, TypeError):
-        return None, None, None
+        return None, None, None, [0, 0]
 
-def build_blocks_from_matrix(matrix):
+def build_blocks_from_matrix(matrix, offset):
     global current_level_matrix
 
     current_level_matrix = matrix
     blocks.empty()
     if not matrix:
         return
+
+    off_x, off_y = offset
 
     for y, row in enumerate(matrix):
         for x, val in enumerate(row):
@@ -165,12 +167,11 @@ def build_blocks_from_matrix(matrix):
 
             tile_id = int(val) - 1
             if 0 <= tile_id < len(tile_surfaces):
-                tile = Tile(x, y, tile_id)
+                tile = Tile(x + off_x, y + off_y, tile_id)
                 blocks.add(tile)
                 info = tile_dicts[tile.tile_id]
                 if info.get("spike", False):
                     tile.rect.inflate_ip(-8, -4)
-                    print('gelukt')
 
 def create_low_border():
     tiles = blocks.sprites()
@@ -192,19 +193,21 @@ def reset_run_state():
 def start_level(level_path):
     global end_rect
 
-    matrix, spawn, end_pos = load_level(level_path)
-    build_blocks_from_matrix(matrix)
+    matrix, spawn, end_pos, offset = load_level(level_path)
+    off_x, off_y = offset
+
+    build_blocks_from_matrix(matrix, offset)
 
     if spawn is not None:
         player.start_pos = (
-            spawn[0] * grid_size + grid_size // 2,
-            spawn[1] * grid_size + grid_size // 2,
+            (spawn[0] + off_x) * grid_size + grid_size // 2,
+            (spawn[1] + off_y) * grid_size + grid_size // 2,
         )
 
     if end_pos is not None:
         end_rect = pygame.Rect(
-            end_pos[0] * grid_size,
-            end_pos[1] * grid_size,
+            (end_pos[0] + off_x) * grid_size,
+            (end_pos[1] + off_y) * grid_size,
             grid_size,
             grid_size,
         )

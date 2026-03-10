@@ -49,24 +49,62 @@ def level_path(level_id):
 
 def save_level():
     if placed:
+        min_x = min(x for x, y in placed)
         max_x = max(x for x, y in placed)
+        min_y = min(y for x, y in placed)
         max_y = max(y for x, y in placed)
     else:
-        max_x = max_y = 0
+        min_x = max_x = min_y = max_y = 0
 
-    matrix = [[EMPTY for _ in range(max_x + 1)] for _ in range(max_y + 1)]
+    width = max_x - min_x + 1
+    height = max_y - min_y + 1
+
+    matrix = [[EMPTY for _ in range(width)] for _ in range(height)]
 
     for (x, y), tile_id in placed.items():
-        matrix[y][x] = tile_id + 1
+        matrix[y - min_y][x - min_x] = tile_id + 1
 
     data = {
         "level": matrix,
-        "spawn": markers["spawn"],
-        "end": markers["end"]
+        "spawn": [markers["spawn"][0] - min_x, markers["spawn"][1] - min_y] if markers["spawn"] else None,
+        "end": [markers["end"][0] - min_x, markers["end"][1] - min_y] if markers["end"] else None,
+        "offset": [min_x, min_y]
     }
 
     with open(level_path(current_level), "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+
+        def load_level(level_id):
+            global current_level
+            current_level = level_id
+            placed.clear()
+            history.clear()
+            markers["spawn"] = None
+            markers["end"] = None
+
+            path = level_path(level_id)
+            if not os.path.exists(path):
+                return
+
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            matrix = data.get("level", [])
+            offset = data.get("offset", [0, 0])
+            off_x, off_y = offset
+
+            for y, row in enumerate(matrix):
+                for x, val in enumerate(row):
+                    if val != EMPTY:
+                        placed[(x + off_x, y + off_y)] = int(val) - 1
+
+            spawn = data.get("spawn")
+            end = data.get("end")
+
+            if spawn:
+                markers["spawn"] = [spawn[0] + off_x, spawn[1] + off_y]
+            if end:
+                markers["end"] = [end[0] + off_x, end[1] + off_y]
 
 def load_level(level_id):
     global current_level
@@ -84,13 +122,22 @@ def load_level(level_id):
         data = json.load(f)
 
     matrix = data.get("level", [])
+    offset = data.get("offset", [0, 0])
+    off_x, off_y = offset
+
     for y, row in enumerate(matrix):
         for x, val in enumerate(row):
             if val != EMPTY:
-                placed[(x, y)] = int(val) - 1
+                placed[(x + off_x, y + off_y)] = int(val) - 1
 
-    markers["spawn"] = data.get("spawn")
-    markers["end"] = data.get("end")
+    spawn = data.get("spawn")
+    end = data.get("end")
+
+    if spawn:
+        markers["spawn"] = [spawn[0] + off_x, spawn[1] + off_y]
+    if end:
+        markers["end"] = [end[0] + off_x, end[1] + off_y]
+
 
 def clear_level():
     placed.clear()
@@ -107,6 +154,8 @@ def draw_marker(pos, color):
     gx, gy = pos
     rect = pygame.Rect(gx * GRID - cam_x, gy * GRID - cam_y, GRID, GRID)
     pygame.draw.rect(screen, color, rect, 3)
+
+
 
 load_level(current_level)
 
