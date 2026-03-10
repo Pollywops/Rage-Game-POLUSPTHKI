@@ -56,6 +56,8 @@ current_level_matrix = None
 menu_page = 0
 LEVELS_PER_PAGE = 10
 
+level_times = {}
+
 ##########COLORS##############
 RED = (255,0,0)
 GREEN = (0,177,64)
@@ -292,7 +294,7 @@ def draw_menu(screen):
     screen.blit(page_text, (screen.get_width() // 2 - page_text.get_width() // 2, 140))
 
     start_y = 200
-    button_w = 80
+    button_w = 160
     button_h = 40
 
     start_index = menu_page * LEVELS_PER_PAGE
@@ -311,7 +313,12 @@ def draw_menu(screen):
 
         pygame.draw.rect(screen, BLACK, rect, 2)
 
-        text = font_menu.render(str(level_index + 1), True, BLACK)
+        try:
+            text = font_menu.render(f"{str(level_index + 1)} {level_times[level_index]}" , True, BLACK)
+        except:
+            text = font_menu.render(str(level_index + 1), True, BLACK)
+
+
         screen.blit(text, text.get_rect(center=rect.center))
 
     hint = font_menu.render("LEFT/RIGHT = page   UP/DOWN = level   ENTER = play", True, BLACK)
@@ -584,6 +591,11 @@ while True:
         tile_function_update(old_vy)
         if end_rect and player.rect.colliderect(end_rect):
             state = "menu"
+            # level_times[level_id] == stopwatch.get_formatted_time()
+            # print(level_times[level_id])
+
+            level_times.update({level_id:stopwatch.get_formatted_time()})
+            print(level_times)
             start_music('menu')
         gun.update(player, cam)
         hook.update(gun)
