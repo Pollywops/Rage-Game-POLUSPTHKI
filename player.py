@@ -71,13 +71,8 @@ class Player(pygame.sprite.Sprite):
         self.hooked = False
 
     def apply_rope_tens(self):
-        keys = pygame.key.get_pressed()
 
-        if keys[pygame.K_w]:
-            self.rope_len = max(40, self.rope_len - 3)
-
-        if keys[pygame.K_s]:
-            self.rope_len += 3
+        self.rope_len = max(40, self.rope_len - 2)
 
         if not self.hooked:
             return

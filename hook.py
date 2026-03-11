@@ -9,7 +9,7 @@ class HProjectile(pygame.sprite.Sprite):
         self.pos = pygame.Vector2(x, y)
         self.rect.center = (round(self.pos.x), round(self.pos.y))
         self.angle = angle
-        self.speed = 15
+        self.speed = 30
         self.ancored = False
 
     def update(self, blocks, player, cam, screen):

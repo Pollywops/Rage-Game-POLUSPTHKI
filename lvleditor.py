@@ -14,7 +14,7 @@ ORANGE = (252, 76, 2)
 RED = (255, 0, 0)
 BLUE = (0, 120, 255)
 
-screen = pygame.display.set_mode(SCREENSIZE, flags=pygame.SCALED, vsync=1)
+screen = pygame.display.set_mode(SCREENSIZE, flags=pygame.RESIZABLE, vsync=1)
 clock = pygame.time.Clock()
 
 with open("tiledata.json", "r", encoding="utf-8") as f:

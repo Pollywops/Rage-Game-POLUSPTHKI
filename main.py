@@ -574,7 +574,7 @@ while True:
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
 
-                if homeknp_rect.collidepoint(event.pos):
+                if homekonp_rect.collidepoint(event.pos):
                     state = "menu"
 
                 if fullscreen_rect.collidepoint(event.pos):
@@ -601,8 +601,6 @@ while True:
 
         screen.fill(WHITE)
 
-        screen.blit(speed_text, (20, 20))  # 20,20 = linksboven
-
         cam.update_center(player.rect)
         player.update(blocks, gun)
         if player.rect.bottom > lowest + 300:
@@ -622,6 +620,8 @@ while True:
         vel_y = player.vely
 
         speed = math.hypot(vel_x, vel_y)  # absolute snelheid
+        if speed < 1:
+            speed = 0
         speed_pixels = round(speed, 2)  # optioneel afronden
 
         speed_text = font_klein.render(f"Speed: {speed_pixels}", True, (0, 0, 0))
@@ -643,21 +643,6 @@ while True:
         player.draw(screen, cam)
         if end_rect:
             pygame.draw.rect(screen, (0, 120, 255), cam.apply_rect(end_rect), 3)
-
-    elif state == "settings":
-        if homekonp_rect.collidepoint(event.pos):
-            state = "menu"
-        if plus_rect.collidepoint(event.pos):
-
-            if volume < 100:
-                volume += 1
-                pygame.mixer.music.set_volume(volume / 100)
-
-        if min_rect.collidepoint(event.pos):
-
-            if volume > 0:
-                volume -= 1
-                pygame.mixer.music.set_volume(volume / 100)
 
     pygame.display.flip()
     clock.tick(FPS)
