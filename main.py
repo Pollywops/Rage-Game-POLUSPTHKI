@@ -5,7 +5,7 @@ import math
 from camera import Camera
 from player import Player
 from gun import Gun
-from hook import Hook
+from hook import HProjectile as hook
 import os
 
 pygame.font.init()
@@ -18,11 +18,14 @@ fontArial = pygame.font.SysFont("Arial", 72)
 
 volume = 100
 
+fullscreen_text = font_klein.render("Fullscreen", True, (0,0,0))
+fullscreen_rect = fullscreen_text.get_rect(center=(400,450))
+
 hint3 = font_klein.render("Settings", True, (0, 0, 0))
 settings_rect = hint3.get_rect(topright=(770, 50))
 
 home = font_klein.render("Home", True, (0, 0, 0))
-homeknp_rect = home.get_rect(topleft=(30,50))
+homekonp_rect = home.get_rect(topleft=(30,50))
 
 plus_text = font_klein.render("+", True, (0, 0, 0))
 plus_rect = plus_text.get_rect()
@@ -30,6 +33,7 @@ plus_rect = plus_text.get_rect()
 min_text = font_klein.render("-", True, (0, 0, 0))
 min_rect = min_text.get_rect()
 
+fullscreen = False
 
 pygame.mixer.set_num_channels(40)
 menu_intro = ("sounds/main_menu_intro.ogg")
@@ -173,7 +177,9 @@ def build_blocks_from_matrix(matrix, offset):
                 blocks.add(tile)
                 info = tile_dicts[tile.tile_id]
                 if info.get("spike", False):
-                    tile.rect.inflate_ip(-8, -4)
+                    tile.rect = tile.rect.inflate(-8, -4)
+                if info.get("glide", False):
+                    tile.friction = 0
 
 def create_low_border():
     tiles = blocks.sprites()
@@ -188,8 +194,8 @@ def reset_run_state():
     gun.bullets = 2
     gun.bullet_type = 'NORMAL'
     gun.super_shots_left = 0
-    hook.hooking = False
     stopwatch.reset()
+    active_hook = None
 
 
 def start_level(level_path):
@@ -247,36 +253,18 @@ def get_tile_info_at_world(x, y):
 
     return tile_dicts[tile_id]
 
-
-bouncing_lock = False
-
-def tile_function_update(prev_vy):
-    global bouncing_lock
-    bouncing = False
-
+def tile_function_update():
     for tile in blocks:
         info = tile_dicts[tile.tile_id]
-
-        if info.get("bouncy", False):
-            if player.hitbox.colliderect(tile.rect):
-                bouncing = True
-
-                if not bouncing_lock:
-                    player.vely = -1*(prev_vy)
-                    bouncing_lock = True
-        elif info.get("super_pickup", False):
-            if player.hitbox.colliderect(tile.rect):
+        if info.get("super_pickup", False):
+            if player.rect.colliderect(tile.rect):
                 tile.kill()
                 gun.activate_super_shots(2)
         elif info.get("spike", False):
-            if player.hitbox_spike.colliderect(tile.rect):
-
+            if player.rect.colliderect(tile.rect):
                 start_level(huidig_level)
                 lowest = create_low_border()
                 reset_run_state()
-
-    if not bouncing:
-        bouncing_lock = False
 
 
 def draw_menu(screen):
@@ -323,6 +311,7 @@ def draw_menu(screen):
 
     hint = font_menu.render("LEFT/RIGHT = page   UP/DOWN = level   ENTER = play", True, BLACK)
     screen.blit(hint, hint.get_rect(center=(screen.get_width() // 2, 740)))
+    screen.blit(hint3, settings_rect)
 
 def draw_settings(screen):
 
@@ -338,10 +327,22 @@ def draw_settings(screen):
     # min rechts
     min_rect.midleft = (volume_rect.right + 10, volume_rect.centery)
 
-    screen.blit(home, homeknp_rect)
+    screen.blit(home, homekonp_rect)
     screen.blit(volume_text, volume_rect)
     screen.blit(plus_text, plus_rect)
     screen.blit(min_text, min_rect)
+    screen.blit(fullscreen_text, fullscreen_rect)
+
+
+def toggle_fullscreen():
+    global screen, fullscreen
+
+    fullscreen = not fullscreen
+
+    if fullscreen:
+        screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    else:
+        screen = pygame.display.set_mode(SCREENSIZE, pygame.RESIZABLE, vsync=1)
 
 #CLASSES
 
@@ -352,6 +353,7 @@ class Tile(pygame.sprite.Sprite):
         self.tile_id = tile_id
         self.image = tile_surfaces[self.tile_id]
         self.info = tile_dicts[tile_id]
+        self.friction = 30
         self.rect = self.image.get_rect(topleft=(gx * grid_size, gy * grid_size))
 
     def draw(self):
@@ -446,10 +448,10 @@ stopwatch.start()
 
 button3 = Button(500,150, 175, 30, True, GREEN,
                  30, 5,fontoffsetY= -3,text= 'TIME: 00:00.00')
-hook = Hook()
 
 buttons.add(button1,button2,button3)
 start_music("menu")
+active_hook = None
 
 # dit is de grote game loop, hier worden alle events afgehandeld, het scherm wordt geupdate en getekend.
 while True:
@@ -473,6 +475,11 @@ while True:
 
         # menu input
         if state == "menu":
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if settings_rect.collidepoint(event.pos):
+                    state = "settings"
+
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 button_w = 80
                 button_h = 40
@@ -563,15 +570,36 @@ while True:
                     lowest = create_low_border()
                     reset_run_state()
                 elif event.key == pygame.K_h:
-                    hook.hook(Projectile())
+                    if not active_hook:
+                        active_hook = hook(player.rect.centerx, player.rect.centery, 10,10, gun.angle,30)
+                    else:
+                        player.derope()
+                        active_hook = None
+
+        elif state == "settings":
+            draw_settings(screen)
+
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+
+                if homeknp_rect.collidepoint(event.pos):
+                    state = "menu"
+
+                if fullscreen_rect.collidepoint(event.pos):
+                    toggle_fullscreen()
+
+                if plus_rect.collidepoint(event.pos):
+                    if volume < 100:
+                        volume += 1
+                        pygame.mixer.music.set_volume(volume / 100)
+
+                if min_rect.collidepoint(event.pos):
+                    if volume > 0:
+                        volume -= 1
+                        pygame.mixer.music.set_volume(volume / 100)
 
     # draw en update
     if state == "menu":
         draw_menu(screen)
-
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if settings_rect.collidepoint(event.pos):
-                state = "settings"
 
     elif state == "game":
         if not pygame.mixer.music.get_busy():
@@ -580,15 +608,15 @@ while True:
 
         screen.fill(WHITE)
 
-        cam.update_center(player.rect)
+        screen.blit(speed_text, (20, 20))  # 20,20 = linksboven
 
-        old_vy = player.vely
+        cam.update_center(player.rect)
         player.update(blocks, gun)
         if player.rect.bottom > lowest + 300:
             start_level(huidig_level)
             lowest = create_low_border()
             reset_run_state()
-        tile_function_update(old_vy)
+        tile_function_update()
         if end_rect and player.rect.colliderect(end_rect):
             state = "menu"
             # level_times[level_id] == stopwatch.get_formatted_time()
@@ -598,7 +626,18 @@ while True:
             print(level_times)
             start_music('menu')
         gun.update(player, cam)
-        hook.update(gun)
+        if active_hook:
+            active_hook.update(blocks, player, cam, screen)
+            active_hook.draw(screen, cam)
+
+        vel_x = player.velx
+        vel_y = player.vely
+
+        speed = math.hypot(vel_x, vel_y)  # absolute snelheid
+        speed_pixels = round(speed, 2)  # optioneel afronden
+
+        speed_text = font_klein.render(f"Speed: {speed_pixels}", True, (0, 0, 0))
+        screen.blit(speed_text, (20, 20))  # linksboven
 
         for b in blocks:
             b.update()
@@ -614,12 +653,11 @@ while True:
 
         gun.draw(screen, cam)
         player.draw(screen, cam)
-        hook.draw(screen, cam)
         if end_rect:
             pygame.draw.rect(screen, (0, 120, 255), cam.apply_rect(end_rect), 3)
 
     elif state == "settings":
-        if homeknp_rect.collidepoint(event.pos):
+        if homekonp_rect.collidepoint(event.pos):
             state = "menu"
         if plus_rect.collidepoint(event.pos):
 
