@@ -343,6 +343,47 @@ def toggle_fullscreen():
         screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     else:
         screen = pygame.display.set_mode(SCREENSIZE, pygame.RESIZABLE, vsync=1)
+bg_raw = pygame.image.load('textures/background.png').convert()
+def make_background(screen_size):
+    sw, sh = screen_size
+
+    scale = 1.35
+    bw = int(sw * scale)
+    bh = int(sh * scale)
+
+    return pygame.transform.smoothscale(bg_raw, (bw, bh))
+
+def draw_background(screen, background, player):
+    sw, sh = screen.get_size()
+    bw, bh = background.get_size()
+
+    # hoeveel de achtergrond mag bewegen
+    max_x = bw - sw
+    max_y = bh - sh
+
+    # klein parallax-effect
+    parallax_x = 0.05
+    parallax_y = 0.02
+
+    # beweging t.o.v. spawn
+    dx = player.rect.centerx - player.start_pos[0]
+    dy = player.rect.centery - player.start_pos[1]
+
+    # standaard middenpositie
+    base_x = (sw - bw) / 2
+    base_y = (sh - bh) / 2
+
+    # gewenste achtergrondpositie
+    bg_x = base_x - dx * parallax_x
+    bg_y = base_y - dy * parallax_y
+
+    # clampen zodat je nooit buiten de afbeelding kijkt
+    bg_x = max(sw - bw, min(0, bg_x))
+    bg_y = max(sh - bh, min(0, bg_y))
+
+    screen.blit(background, (bg_x, bg_y))
+
+background = make_background(SCREENSIZE)
 
 #CLASSES
 
@@ -453,6 +494,7 @@ buttons.add(button1,button2,button3)
 start_music("menu")
 active_hook = None
 
+
 # dit is de grote game loop, hier worden alle events afgehandeld, het scherm wordt geupdate en getekend.
 while True:
     # -------------------- EVENTS --------------------
@@ -470,6 +512,7 @@ while True:
 
         if event.type == pygame.VIDEORESIZE:
             SCREENSIZE = [event.w, event.h]
+            background = make_background(SCREENSIZE)
             cam.resize(SCREENSIZE)
             screen = pygame.display.set_mode(SCREENSIZE, flags=pygame.RESIZABLE, vsync=1)
 
@@ -586,6 +629,7 @@ while True:
 
                 if fullscreen_rect.collidepoint(event.pos):
                     toggle_fullscreen()
+                    background = make_background(SCREENSIZE)
 
                 if plus_rect.collidepoint(event.pos):
                     if volume < 100:
@@ -606,7 +650,7 @@ while True:
             pygame.mixer.music.load(current_loop)
             pygame.mixer.music.play(-1)
 
-        screen.fill(WHITE)
+        draw_background(screen, background, player)
 
         cam.update_center(player.rect)
         player.update(blocks, gun)

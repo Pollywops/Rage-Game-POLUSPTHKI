@@ -1,6 +1,6 @@
 {
   "tiles": [
-    { "name": "aarde", "file": "Aarde_Midden.png", "solid": true },
+    { "name": "aarde", "file": "Meteoriet_Blok.jpg", "solid": true },
     { "name": "gras", "file": "Gras_Top.png", "solid": true },
     { "name": "spike", "file": "spike.png", "solid": true, "spike": true},
     {"name":  "bouncy", "file":  "bouncy.png", "solid":  true, "bouncy":  true, "glide" : true},
