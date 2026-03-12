@@ -344,84 +344,78 @@ def draw_menu(screen):
     screen.blit(hint3, settings_rect)
 
 MC_BTN_W = 400
-MC_BTN_H = 40
+TOGGLE_W = 300
+TOGGLE_H = 40
+KNOB_W   = 40
 SLIDER_W = 400
-SLIDER_H = 20
+SLIDER_H = 30
 
 def get_slider_rect(screen):
     cx = screen.get_width() // 2
-    return pygame.Rect(cx - SLIDER_W // 2, 300, SLIDER_W, SLIDER_H)
+    return pygame.Rect(cx - SLIDER_W // 2, 310, SLIDER_W, SLIDER_H)
 
-def draw_mc_button(screen, rect, text):
-    pygame.draw.rect(screen, (80, 80, 80), rect)
-    pygame.draw.line(screen, (160, 160, 160), rect.topleft, (rect.right - 1, rect.top), 2)
-    pygame.draw.line(screen, (160, 160, 160), rect.topleft, (rect.left, rect.bottom - 1), 2)
-    pygame.draw.line(screen, (30, 30, 30), (rect.left, rect.bottom - 1), rect.bottomright, 2)
-    pygame.draw.line(screen, (30, 30, 30), (rect.right - 1, rect.top), rect.bottomright, 2)
-    lbl = font_menu.render(text, True, (255, 255, 255))
-    screen.blit(lbl, lbl.get_rect(center=rect.center))
+def draw_sliding_toggle(screen, cx, y, label, value):
+    """Draws a label to the left and a sliding-door toggle to the right."""
+    lbl = font_menu.render(label, True, BLACK)
+    screen.blit(lbl, (cx - 240, y + (TOGGLE_H - lbl.get_height()) // 2))
 
-def draw_mc_toggle(screen, rect, label, value):
-    on_color  = (60, 100, 60)
-    off_color = (80, 80, 80)
-    pygame.draw.rect(screen, on_color if value else off_color, rect)
-    pygame.draw.line(screen, (160, 160, 160), rect.topleft, (rect.right - 1, rect.top), 2)
-    pygame.draw.line(screen, (160, 160, 160), rect.topleft, (rect.left, rect.bottom - 1), 2)
-    pygame.draw.line(screen, (30, 30, 30), (rect.left, rect.bottom - 1), rect.bottomright, 2)
-    pygame.draw.line(screen, (30, 30, 30), (rect.right - 1, rect.top), rect.bottomright, 2)
-    val_str = "ON" if value else "OFF"
-    lbl = font_menu.render(f"{label}: {val_str}", True, (255, 255, 255))
-    screen.blit(lbl, lbl.get_rect(center=rect.center))
-    return rect
+    track = pygame.Rect(cx + 10, y, TOGGLE_W, TOGGLE_H)
+    pygame.draw.rect(screen, (180, 180, 180), track)
+    pygame.draw.rect(screen, BLACK, track, 2)
+
+    # Knob slides left=OFF, right=ON
+    knob_x = track.right - KNOB_W if value else track.left
+    knob = pygame.Rect(knob_x, track.top, KNOB_W, TOGGLE_H)
+    pygame.draw.rect(screen, WHITE if not value else (200, 200, 200), knob)
+    pygame.draw.rect(screen, BLACK, knob, 2)
+
+    # ON / OFF labels inside track
+    off_lbl = font_menu.render("OFF", True, BLACK)
+    on_lbl  = font_menu.render("ON",  True, BLACK)
+    screen.blit(off_lbl, off_lbl.get_rect(center=(track.left  + KNOB_W // 2 + (TOGGLE_W - KNOB_W) // 4, track.centery)))
+    screen.blit(on_lbl,  on_lbl.get_rect( center=(track.right - KNOB_W // 2 - (TOGGLE_W - KNOB_W) // 4, track.centery)))
+
+    return track
 
 def draw_settings(screen):
-    screen.fill((40, 40, 40))
+    screen.fill((125, 190, 255))
     cx = screen.get_width() // 2
 
-    title = font_klein.render("Options", True, (255, 255, 255))
-    screen.blit(title, title.get_rect(center=(cx, 60)))
+    title = font_klein.render("Settings", True, BLACK)
+    screen.blit(title, title.get_rect(center=(cx, 70)))
 
-    # Home button (re-render Minecraft style)
-    home_rect = pygame.Rect(20, 20, 110, 40)
-    draw_mc_button(screen, home_rect, "< Back")
+    screen.blit(home, homekonp_rect)
 
-    # Volume label button (non-interactive, shows value)
-    vol_rect = pygame.Rect(cx - MC_BTN_W // 2, 140, MC_BTN_W, MC_BTN_H)
-    draw_mc_button(screen, vol_rect, f"Music Volume: {volume}%")
-
-    # Volume slider
+    # Volume label — right above the slider
+    vol_lbl = font_menu.render(f"Volume: {volume}%", True, BLACK)
     slider = get_slider_rect(screen)
-    pygame.draw.rect(screen, (30, 30, 30), slider)
-    pygame.draw.line(screen, (20, 20, 20), slider.topleft, slider.topright)
-    pygame.draw.line(screen, (20, 20, 20), slider.topleft, slider.bottomleft)
-    pygame.draw.line(screen, (80, 80, 80), slider.bottomleft, slider.bottomright)
-    pygame.draw.line(screen, (80, 80, 80), slider.topright, slider.bottomright)
+    screen.blit(vol_lbl, vol_lbl.get_rect(midbottom=(slider.centerx, slider.top - 4)))
+
+    # Volume slider — track
+    pygame.draw.rect(screen, (180, 180, 180), slider)
+    pygame.draw.rect(screen, BLACK, slider, 2)
 
     fill_w = int(slider.width * volume / 100)
     fill = pygame.Rect(slider.left, slider.top, fill_w, slider.height)
-    pygame.draw.rect(screen, (100, 160, 100), fill)
+    pygame.draw.rect(screen, (100, 160, 220), fill)
 
-    handle_x = slider.left + fill_w - 5
-    handle = pygame.Rect(handle_x, slider.top - 4, 10, slider.height + 8)
-    pygame.draw.rect(screen, (220, 220, 220), handle)
-    pygame.draw.line(screen, (255, 255, 255), handle.topleft, handle.topright)
-    pygame.draw.line(screen, (100, 100, 100), handle.bottomleft, handle.bottomright)
+    # Square knob
+    knob_x = max(slider.left, min(slider.left + fill_w - SLIDER_H // 2, slider.right - SLIDER_H))
+    knob = pygame.Rect(knob_x, slider.top, SLIDER_H, SLIDER_H)
+    pygame.draw.rect(screen, WHITE, knob)
+    pygame.draw.rect(screen, BLACK, knob, 2)
 
-    # Toggle buttons
-    toggles_y = 360
-    gap = 52
-    fs_rect  = pygame.Rect(cx - MC_BTN_W // 2, toggles_y,        MC_BTN_W, MC_BTN_H)
-    spd_rect = pygame.Rect(cx - MC_BTN_W // 2, toggles_y + gap,  MC_BTN_W, MC_BTN_H)
-    dth_rect = pygame.Rect(cx - MC_BTN_W // 2, toggles_y + gap*2, MC_BTN_W, MC_BTN_H)
-
-    draw_mc_toggle(screen, fs_rect,  "Fullscreen",  fullscreen)
-    draw_mc_toggle(screen, spd_rect, "Show Speed",  show_speed)
-    draw_mc_toggle(screen, dth_rect, "Show Deaths", show_deaths)
+    # Toggles
+    gap = 58
+    ty = 390
+    draw_sliding_toggle(screen, cx, ty,        "Fullscreen",  fullscreen)
+    draw_sliding_toggle(screen, cx, ty + gap,  "Show Speed",  show_speed)
+    draw_sliding_toggle(screen, cx, ty + gap*2,"Show Deaths", show_deaths)
 
     # Controls
-    sep_y = toggles_y + gap * 3 + 10
-    pygame.draw.line(screen, (100, 100, 100), (cx - 220, sep_y), (cx + 220, sep_y), 1)
-    ctrl_title = font_menu.render("Controls", True, (200, 200, 200))
+    sep_y = ty + gap * 3 + 10
+    pygame.draw.line(screen, BLACK, (cx - 230, sep_y), (cx + 230, sep_y), 1)
+    ctrl_title = font_menu.render("Controls", True, BLACK)
     screen.blit(ctrl_title, ctrl_title.get_rect(center=(cx, sep_y + 16)))
 
     controls = [
@@ -767,16 +761,15 @@ while True:
 
         elif state == "settings":
             cx = screen.get_width() // 2
-            gap = 52
-            toggles_y = 360
-            home_rect  = pygame.Rect(20, 20, 110, 40)
-            fs_rect    = pygame.Rect(cx - MC_BTN_W // 2, toggles_y,         MC_BTN_W, MC_BTN_H)
-            spd_rect   = pygame.Rect(cx - MC_BTN_W // 2, toggles_y + gap,   MC_BTN_W, MC_BTN_H)
-            dth_rect   = pygame.Rect(cx - MC_BTN_W // 2, toggles_y + gap*2, MC_BTN_W, MC_BTN_H)
-            slider     = get_slider_rect(screen)
+            gap = 58
+            ty  = 390
+            fs_rect  = pygame.Rect(cx + 10, ty,        TOGGLE_W, TOGGLE_H)
+            spd_rect = pygame.Rect(cx + 10, ty + gap,  TOGGLE_W, TOGGLE_H)
+            dth_rect = pygame.Rect(cx + 10, ty + gap*2,TOGGLE_W, TOGGLE_H)
+            slider   = get_slider_rect(screen)
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if home_rect.collidepoint(event.pos):
+                if homekonp_rect.collidepoint(event.pos):
                     state = "menu"
                 elif fs_rect.collidepoint(event.pos):
                     toggle_fullscreen()
