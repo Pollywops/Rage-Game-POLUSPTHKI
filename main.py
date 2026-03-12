@@ -8,6 +8,20 @@ from gun import Gun
 from hook import HProjectile as hook
 import os
 
+SAVE_FILE = "save_data.json"
+
+def load_save():
+    try:
+        with open(SAVE_FILE, "r") as f:
+            data = json.load(f)
+        return {int(k): v for k, v in data.get("best_times", {}).items()}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+def save_best_times(best_times):
+    with open(SAVE_FILE, "w") as f:
+        json.dump({"best_times": {str(k): v for k, v in best_times.items()}}, f)
+
 pygame.font.init()
 pygame.mixer.init()
 
@@ -61,6 +75,10 @@ menu_page = 0
 LEVELS_PER_PAGE = 10
 
 level_times = {}
+best_times = load_save()
+deaths = 0
+complete_time = ""
+complete_deaths = 0
 
 ##########COLORS##############
 RED = (255,0,0)
@@ -197,6 +215,17 @@ def reset_run_state():
     stopwatch.reset()
     active_hook = None
 
+def die():
+    global deaths, active_hook
+    deaths += 1
+    cam.add_shake()
+    player.reset_position()
+    gun.bullets = 2
+    gun.bullet_type = 'NORMAL'
+    gun.super_shots_left = 0
+    stopwatch.reset()
+    active_hook = None
+
 
 def start_level(level_path):
     global end_rect
@@ -262,9 +291,7 @@ def tile_function_update():
                 gun.activate_super_shots(2)
         elif info.get("spike", False):
             if player.rect.colliderect(tile.rect):
-                start_level(huidig_level)
-                lowest = create_low_border()
-                reset_run_state()
+                die()
 
 
 def draw_menu(screen):
@@ -301,9 +328,9 @@ def draw_menu(screen):
 
         pygame.draw.rect(screen, BLACK, rect, 2)
 
-        try:
-            text = font_menu.render(f"{str(level_index + 1)} {level_times[level_index]}" , True, BLACK)
-        except:
+        if level_index in best_times:
+            text = font_menu.render(f"{level_index + 1}  {best_times[level_index]}", True, BLACK)
+        else:
             text = font_menu.render(str(level_index + 1), True, BLACK)
 
 
@@ -343,6 +370,38 @@ def toggle_fullscreen():
         screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     else:
         screen = pygame.display.set_mode(SCREENSIZE, pygame.RESIZABLE, vsync=1)
+
+def _parse_time(s):
+    try:
+        m, rest = s.split(":")
+        sec, ms = rest.split(".")
+        return int(m) * 60 + int(sec) + int(ms) / 100
+    except Exception:
+        return float("inf")
+
+def draw_level_complete(screen):
+    overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, 160))
+    screen.blit(overlay, (0, 0))
+
+    cx = screen.get_width() // 2
+
+    title = font_klein.render("Level Complete!", True, (255, 220, 50))
+    screen.blit(title, title.get_rect(center=(cx, 200)))
+
+    time_surf = font_klein.render(f"Time:   {complete_time}", True, (255, 255, 255))
+    screen.blit(time_surf, time_surf.get_rect(center=(cx, 290)))
+
+    death_surf = font_klein.render(f"Deaths: {complete_deaths}", True, (255, 100, 100))
+    screen.blit(death_surf, death_surf.get_rect(center=(cx, 360)))
+
+    best = best_times.get(level_id, None)
+    if best:
+        best_surf = font_menu.render(f"Best: {best}", True, (100, 255, 180))
+        screen.blit(best_surf, best_surf.get_rect(center=(cx, 430)))
+
+    hint = font_menu.render("Press ENTER to continue", True, (180, 180, 180))
+    screen.blit(hint, hint.get_rect(center=(cx, 520)))
 bg_raw = pygame.image.load('textures/background.png').convert()
 def make_background(screen_size):
     sw, sh = screen_size
@@ -582,6 +641,7 @@ while True:
 
                 elif event.key == pygame.K_RETURN:
                     if huidig_level:
+                        deaths = 0
                         start_level(huidig_level)
                         lowest = create_low_border()
                         start_music("game")
@@ -619,6 +679,13 @@ while True:
                         player.derope()
                         active_hook = None
 
+        elif state == "level_complete":
+            if event.type == pygame.KEYDOWN:
+                if event.key in (pygame.K_RETURN, pygame.K_ESCAPE):
+                    state = "menu"
+                    deaths = 0
+                    start_music("menu")
+
         elif state == "settings":
             draw_settings(screen)
 
@@ -655,18 +722,17 @@ while True:
         cam.update_center(player.rect)
         player.update(blocks, gun)
         if player.rect.bottom > lowest + 300:
-            start_level(huidig_level)
-            lowest = create_low_border()
-            reset_run_state()
+            die()
         tile_function_update()
         if end_rect and player.rect.colliderect(end_rect):
-            state = "menu"
-            # level_times[level_id] == stopwatch.get_formatted_time()
-            # print(level_times[level_id])
-
-            level_times.update({level_id:stopwatch.get_formatted_time()})
-            print(level_times)
-            start_music('menu')
+            global complete_time, complete_deaths
+            complete_time = stopwatch.get_formatted_time()
+            complete_deaths = deaths
+            level_times[level_id] = complete_time
+            if level_id not in best_times or stopwatch.get_time() < _parse_time(best_times[level_id]):
+                best_times[level_id] = complete_time
+                save_best_times(best_times)
+            state = "level_complete"
         gun.update(player, cam)
         if active_hook:
             active_hook.update(blocks, player, cam, screen)
@@ -681,7 +747,10 @@ while True:
         speed_pixels = round(speed, 2)  # optioneel afronden
 
         speed_text = font_klein.render(f"Speed: {speed_pixels}", True, (0, 0, 0))
-        screen.blit(speed_text, (20, 20))  # linksboven
+        screen.blit(speed_text, (20, 20))
+
+        death_text = font_klein.render(f"Deaths: {deaths}", True, (200, 50, 50))
+        screen.blit(death_text, (20, 60))
 
         for b in blocks:
             b.update()
@@ -700,5 +769,9 @@ while True:
         if end_rect:
             pygame.draw.rect(screen, (0, 120, 255), cam.apply_rect(end_rect), 3)
 
+    if state == "level_complete":
+        draw_level_complete(screen)
+
+    cam.update_shake()
     pygame.display.flip()
     clock.tick(FPS)
