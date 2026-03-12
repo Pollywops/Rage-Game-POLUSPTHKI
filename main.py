@@ -341,12 +341,18 @@ def draw_menu(screen):
 
     hint = font_menu.render("LEFT/RIGHT = page   UP/DOWN = level   ENTER = play", True, BLACK)
     screen.blit(hint, hint.get_rect(center=(screen.get_width() // 2, 740)))
+
+    # instellingen knop rechts bovenaan, ziet eruit als een level-knop
+    settings_knop = pygame.Rect(settings_rect.left - 6, settings_rect.top - 4,
+                                settings_rect.width + 12, settings_rect.height + 8)
+    pygame.draw.rect(screen, WHITE, settings_knop)
+    pygame.draw.rect(screen, BLACK, settings_knop, 2)
     screen.blit(hint3, settings_rect)
 
-MC_BTN_W = 400
+# breedte en hoogte van de toggles en de volumebalk
 TOGGLE_W = 300
-TOGGLE_H = 40
-KNOB_W   = 40
+TOGGLE_H = 46
+KNOB_MARGE = 5       # ruimte tussen de rand en het schuifblokje
 SLIDER_W = 400
 SLIDER_H = 30
 
@@ -354,26 +360,38 @@ def get_slider_rect(screen):
     cx = screen.get_width() // 2
     return pygame.Rect(cx - SLIDER_W // 2, 310, SLIDER_W, SLIDER_H)
 
-def draw_sliding_toggle(screen, cx, y, label, value):
-    """Draws a label to the left and a sliding-door toggle to the right."""
-    lbl = font_menu.render(label, True, BLACK)
-    screen.blit(lbl, (cx - 240, y + (TOGGLE_H - lbl.get_height()) // 2))
+# tekent een knop die eruitziet als de level-knoppen in het menu
+def teken_menu_knop(screen, rect, tekst, geselecteerd=False):
+    kleur = GREEN if geselecteerd else WHITE
+    pygame.draw.rect(screen, kleur, rect)
+    pygame.draw.rect(screen, BLACK, rect, 2)
+    lbl = font_menu.render(tekst, True, BLACK)
+    screen.blit(lbl, lbl.get_rect(center=rect.center))
 
+# tekent een toggle met een schuifblokje, links=uit rechts=aan
+def draw_sliding_toggle(screen, cx, y, label, value):
+    lbl = font_menu.render(label, True, BLACK)
+    screen.blit(lbl, (cx - 260, y + (TOGGLE_H - lbl.get_height()) // 2))
+
+    # buitenste balk
     track = pygame.Rect(cx + 10, y, TOGGLE_W, TOGGLE_H)
-    pygame.draw.rect(screen, (180, 180, 180), track)
+    pygame.draw.rect(screen, WHITE, track)
     pygame.draw.rect(screen, BLACK, track, 2)
 
-    # Knob slides left=OFF, right=ON
-    knob_x = track.right - KNOB_W if value else track.left
-    knob = pygame.Rect(knob_x, track.top, KNOB_W, TOGGLE_H)
-    pygame.draw.rect(screen, WHITE if not value else (200, 200, 200), knob)
+    # vierkant blokje dat schuift
+    knob_size = TOGGLE_H - KNOB_MARGE * 2
+    knob_x = track.right - KNOB_MARGE - knob_size if value else track.left + KNOB_MARGE
+    knob = pygame.Rect(knob_x, track.top + KNOB_MARGE, knob_size, knob_size)
+    pygame.draw.rect(screen, (180, 180, 180), knob)
     pygame.draw.rect(screen, BLACK, knob, 2)
 
-    # ON / OFF labels inside track
-    off_lbl = font_menu.render("OFF", True, BLACK)
-    on_lbl  = font_menu.render("ON",  True, BLACK)
-    screen.blit(off_lbl, off_lbl.get_rect(center=(track.left  + KNOB_W // 2 + (TOGGLE_W - KNOB_W) // 4, track.centery)))
-    screen.blit(on_lbl,  on_lbl.get_rect( center=(track.right - KNOB_W // 2 - (TOGGLE_W - KNOB_W) // 4, track.centery)))
+    # aan/uit labels in de balk
+    off_lbl = font_menu.render("UIT", True, BLACK)
+    on_lbl  = font_menu.render("AAN", True, BLACK)
+    midden_links  = track.left  + KNOB_MARGE + knob_size + (TOGGLE_W - knob_size - KNOB_MARGE * 2) // 4
+    midden_rechts = track.right - KNOB_MARGE - knob_size - (TOGGLE_W - knob_size - KNOB_MARGE * 2) // 4
+    screen.blit(off_lbl, off_lbl.get_rect(center=(midden_links,  track.centery)))
+    screen.blit(on_lbl,  on_lbl.get_rect( center=(midden_rechts, track.centery)))
 
     return track
 
@@ -381,56 +399,59 @@ def draw_settings(screen):
     screen.fill((125, 190, 255))
     cx = screen.get_width() // 2
 
-    title = font_klein.render("Settings", True, BLACK)
+    # titel bovenaan
+    title = font_klein.render("Instellingen", True, BLACK)
     screen.blit(title, title.get_rect(center=(cx, 70)))
 
-    screen.blit(home, homekonp_rect)
+    # home knop ziet eruit als een level-knop
+    home_knop = pygame.Rect(homekonp_rect.left - 6, homekonp_rect.top - 4,
+                            homekonp_rect.width + 12, homekonp_rect.height + 8)
+    teken_menu_knop(screen, home_knop, "Home")
 
-    # Volume label — right above the slider
-    vol_lbl = font_menu.render(f"Volume: {volume}%", True, BLACK)
+    # volumelabel vlak boven de balk
     slider = get_slider_rect(screen)
+    vol_lbl = font_menu.render(f"Volume: {volume}%", True, BLACK)
     screen.blit(vol_lbl, vol_lbl.get_rect(midbottom=(slider.centerx, slider.top - 4)))
 
-    # Volume slider — track
-    pygame.draw.rect(screen, (180, 180, 180), slider)
+    # volumebalk achtergrond
+    pygame.draw.rect(screen, WHITE, slider)
     pygame.draw.rect(screen, BLACK, slider, 2)
 
+    # gevuld deel van de balk
     fill_w = int(slider.width * volume / 100)
     fill = pygame.Rect(slider.left, slider.top, fill_w, slider.height)
     pygame.draw.rect(screen, (100, 160, 220), fill)
 
-    # Square knob
+    # vierkant schuifblokje op de volumebalk
     knob_x = max(slider.left, min(slider.left + fill_w - SLIDER_H // 2, slider.right - SLIDER_H))
     knob = pygame.Rect(knob_x, slider.top, SLIDER_H, SLIDER_H)
     pygame.draw.rect(screen, WHITE, knob)
     pygame.draw.rect(screen, BLACK, knob, 2)
 
-    # Toggles
-    gap = 58
-    ty = 390
-    draw_sliding_toggle(screen, cx, ty,        "Fullscreen",  fullscreen)
-    draw_sliding_toggle(screen, cx, ty + gap,  "Show Speed",  show_speed)
-    draw_sliding_toggle(screen, cx, ty + gap*2,"Show Deaths", show_deaths)
+    # toggles voor de opties
+    gap = 60
+    ty = 385
+    draw_sliding_toggle(screen, cx, ty,          "Volledig scherm", fullscreen)
+    draw_sliding_toggle(screen, cx, ty + gap,    "Snelheid tonen",  show_speed)
+    draw_sliding_toggle(screen, cx, ty + gap * 2,"Sterftes tonen",  show_deaths)
 
-    # Controls
-    sep_y = ty + gap * 3 + 10
+    # besturing overzicht
+    sep_y = ty + gap * 3 + 8
     pygame.draw.line(screen, BLACK, (cx - 230, sep_y), (cx + 230, sep_y), 1)
-    ctrl_title = font_menu.render("Controls", True, BLACK)
+    ctrl_title = font_menu.render("Besturing", True, BLACK)
     screen.blit(ctrl_title, ctrl_title.get_rect(center=(cx, sep_y + 16)))
 
-    controls = [
-        ("Mouse click", "Shoot"),
-        ("H",           "Hook"),
-        ("R",           "Super bullet"),
-        ("T",           "Reset"),
-        ("ESC",         "Menu"),
+    besturing = [
+        ("Muisklik",  "Schieten"),
+        ("H",         "Haak gooien"),
+        ("R",         "Super kogel"),
+        ("T",         "Opnieuw starten"),
+        ("ESC",       "Terug naar menu"),
     ]
-    for i, (key, desc) in enumerate(controls):
-        row_y = sep_y + 44 + i * 26
-        ks = font_menu.render(key, True, (160, 200, 160))
-        ds = font_menu.render(desc, True, (180, 180, 180))
-        screen.blit(ks, (cx - 180, row_y))
-        screen.blit(ds, (cx + 20, row_y))
+    for i, (toets, omschrijving) in enumerate(besturing):
+        ry = sep_y + 44 + i * 26
+        screen.blit(font_menu.render(toets,        True, BLACK), (cx - 180, ry))
+        screen.blit(font_menu.render(omschrijving, True, BLACK), (cx + 20,  ry))
 
 
 def toggle_fullscreen():
@@ -651,7 +672,10 @@ while True:
         if state == "menu":
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if settings_rect.collidepoint(event.pos):
+                # check of de instellingen knop is geklikt
+                settings_knop = pygame.Rect(settings_rect.left - 6, settings_rect.top - 4,
+                                            settings_rect.width + 12, settings_rect.height + 8)
+                if settings_knop.collidepoint(event.pos):
                     state = "settings"
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -679,7 +703,7 @@ while True:
                         huidig_level = f"levels/{level_files[level_id]}"
                         lvl_switch.play()
 
-                        # automatically switch page if needed
+                        
                         menu_page = level_id // LEVELS_PER_PAGE
                 elif event.key == pygame.K_DOWN:
                      if level_id < len(level_files) - 1:
@@ -687,7 +711,7 @@ while True:
                         huidig_level = f"levels/{level_files[level_id]}"
                         lvl_switch.play()
 
-                        # automatically switch page if needed
+
                         menu_page = level_id // LEVELS_PER_PAGE
 
                 elif event.key == pygame.K_RIGHT:
@@ -761,15 +785,17 @@ while True:
 
         elif state == "settings":
             cx = screen.get_width() // 2
-            gap = 58
-            ty  = 390
-            fs_rect  = pygame.Rect(cx + 10, ty,        TOGGLE_W, TOGGLE_H)
-            spd_rect = pygame.Rect(cx + 10, ty + gap,  TOGGLE_W, TOGGLE_H)
-            dth_rect = pygame.Rect(cx + 10, ty + gap*2,TOGGLE_W, TOGGLE_H)
+            gap = 60
+            ty  = 385
+            fs_rect  = pygame.Rect(cx + 10, ty,          TOGGLE_W, TOGGLE_H)
+            spd_rect = pygame.Rect(cx + 10, ty + gap,    TOGGLE_W, TOGGLE_H)
+            dth_rect = pygame.Rect(cx + 10, ty + gap * 2,TOGGLE_W, TOGGLE_H)
             slider   = get_slider_rect(screen)
+            home_knop = pygame.Rect(homekonp_rect.left - 6, homekonp_rect.top - 4,
+                                    homekonp_rect.width + 12, homekonp_rect.height + 8)
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if homekonp_rect.collidepoint(event.pos):
+                if home_knop.collidepoint(event.pos):
                     state = "menu"
                 elif fs_rect.collidepoint(event.pos):
                     toggle_fullscreen()
