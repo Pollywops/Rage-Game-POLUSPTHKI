@@ -385,9 +385,9 @@ def draw_sliding_toggle(screen, cx, y, label, value):
     pygame.draw.rect(screen, (180, 180, 180), knob)
     pygame.draw.rect(screen, BLACK, knob, 2)
 
-    # aan/uit labels in de balk
-    off_lbl = font_menu.render("UIT", True, BLACK)
-    on_lbl  = font_menu.render("AAN", True, BLACK)
+    # on/off tekst in de balk
+    off_lbl = font_menu.render("OFF", True, BLACK)
+    on_lbl  = font_menu.render("ON",  True, BLACK)
     midden_links  = track.left  + KNOB_MARGE + knob_size + (TOGGLE_W - knob_size - KNOB_MARGE * 2) // 4
     midden_rechts = track.right - KNOB_MARGE - knob_size - (TOGGLE_W - knob_size - KNOB_MARGE * 2) // 4
     screen.blit(off_lbl, off_lbl.get_rect(center=(midden_links,  track.centery)))
@@ -399,8 +399,8 @@ def draw_settings(screen):
     screen.fill((125, 190, 255))
     cx = screen.get_width() // 2
 
-    # titel bovenaan
-    title = font_klein.render("Instellingen", True, BLACK)
+    # titel bovenaan het scherm
+    title = font_klein.render("Settings", True, BLACK)
     screen.blit(title, title.get_rect(center=(cx, 70)))
 
     # home knop ziet eruit als een level-knop
@@ -428,30 +428,31 @@ def draw_settings(screen):
     pygame.draw.rect(screen, WHITE, knob)
     pygame.draw.rect(screen, BLACK, knob, 2)
 
-    # toggles voor de opties
+    # de drie toggles voor de opties
     gap = 60
     ty = 385
-    draw_sliding_toggle(screen, cx, ty,          "Volledig scherm", fullscreen)
-    draw_sliding_toggle(screen, cx, ty + gap,    "Snelheid tonen",  show_speed)
-    draw_sliding_toggle(screen, cx, ty + gap * 2,"Sterftes tonen",  show_deaths)
+    draw_sliding_toggle(screen, cx, ty,           "Fullscreen",   fullscreen)
+    draw_sliding_toggle(screen, cx, ty + gap,     "Show Speed",   show_speed)
+    draw_sliding_toggle(screen, cx, ty + gap * 2, "Show Deaths",  show_deaths)
 
-    # besturing overzicht
+    # scheidingslijn en kopje voor de besturingslijst
     sep_y = ty + gap * 3 + 8
     pygame.draw.line(screen, BLACK, (cx - 230, sep_y), (cx + 230, sep_y), 1)
-    ctrl_title = font_menu.render("Besturing", True, BLACK)
+    ctrl_title = font_menu.render("Controls", True, BLACK)
     screen.blit(ctrl_title, ctrl_title.get_rect(center=(cx, sep_y + 16)))
 
-    besturing = [
-        ("Muisklik",  "Schieten"),
-        ("H",         "Haak gooien"),
-        ("R",         "Super kogel"),
-        ("T",         "Opnieuw starten"),
-        ("ESC",       "Terug naar menu"),
+    # lijst met toetsen en wat ze doen
+    controls = [
+        ("Mouse click", "Shoot"),
+        ("H",           "Hook"),
+        ("R",           "Super bullet"),
+        ("T",           "Reset"),
+        ("ESC",         "Back to menu"),
     ]
-    for i, (toets, omschrijving) in enumerate(besturing):
+    for i, (key, desc) in enumerate(controls):
         ry = sep_y + 44 + i * 26
-        screen.blit(font_menu.render(toets,        True, BLACK), (cx - 180, ry))
-        screen.blit(font_menu.render(omschrijving, True, BLACK), (cx + 20,  ry))
+        screen.blit(font_menu.render(key,  True, BLACK), (cx - 180, ry))
+        screen.blit(font_menu.render(desc, True, BLACK), (cx + 20,  ry))
 
 
 def toggle_fullscreen():
