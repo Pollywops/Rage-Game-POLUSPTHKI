@@ -13,14 +13,23 @@ SAVE_FILE = "save_data.json"
 def load_save():
     try:
         with open(SAVE_FILE, "r") as f:
-            data = json.load(f)
-        return {int(k): v for k, v in data.get("best_times", {}).items()}
+            data = json.load(f)  #Lees de opgeslagen data
+
+        best_times = data.get("best_times", {})  #Pak best_times uit de data
+        return {int(level): time for level, time in best_times.items()}  #Maak keys weer integers
+
     except (OSError, json.JSONDecodeError):
-        return {}
+        return {}  #Geef een lege dictionary terug als laden mislukt
+
 
 def save_best_times(best_times):
+    data = {
+        "best_times": {str(level): time for level, time in best_times.items()}
+        #Maak de keys strings zodat JSON ze goed opslaat
+    }
+
     with open(SAVE_FILE, "w") as f:
-        json.dump({"best_times": {str(k): v for k, v in best_times.items()}}, f)
+        json.dump(data, f)  #Slaat de data op in het bestand
 
 pygame.font.init()
 pygame.mixer.init()
@@ -30,23 +39,18 @@ font_menu = pygame.font.Font('Fonts/Pixeltype.ttf', 30)
 
 fontArial = pygame.font.SysFont("Arial", 72)
 
-volume = 100
+volume = 100  #Start volume
 
-fullscreen_text = font_klein.render("Fullscreen", True, (0,0,0))
-fullscreen_rect = fullscreen_text.get_rect(center=(400,450))
+fullscreen_text = font_klein.render("Fullscreen", True, (0, 0, 0))
+fullscreen_rect = fullscreen_text.get_rect(center=(400, 450))  #Positie van de fullscreen knop
 
 hint3 = font_klein.render("Settings", True, (0, 0, 0))
-settings_rect = hint3.get_rect(topright=(770, 50))
+settings_rect = hint3.get_rect(topright=(770, 50))  #Positie van de settings knop
 
 home = font_klein.render("Home", True, (0, 0, 0))
-homekonp_rect = home.get_rect(topleft=(30,50))
+homeknop_rect = home.get_rect(topleft=(30, 50))  #Positie van de home knop
 
-plus_text = font_klein.render("+", True, (0, 0, 0))
-plus_rect = plus_text.get_rect()
-
-min_text = font_klein.render("-", True, (0, 0, 0))
-min_rect = min_text.get_rect()
-
+#Start settings
 fullscreen = False
 show_speed = True
 show_deaths = True
@@ -77,11 +81,12 @@ current_level_matrix = None
 menu_page = 0
 LEVELS_PER_PAGE = 10
 
-level_times = {}
-best_times = load_save()
-deaths = 0
-complete_time = ""
-complete_deaths = 0
+level_times = {}          #Bewaart tijden van levels tijdens het spelen
+best_times = load_save()  #Laadt de beste opgeslagen tijden
+deaths = 0                #Aantal deaths waar je mee start
+
+complete_time = ""        #Tijd waarmee een level is gehaalt
+complete_deaths = 0       #Aantal deaths wanneer je het level haalt
 
 ##########COLORS##############
 RED = (255,0,0)
@@ -220,14 +225,17 @@ def reset_run_state():
 
 def die():
     global deaths, active_hook
-    deaths += 1
-    cam.add_shake()
-    player.reset_position()
+
+    deaths += 1              #Tel een death erbij op
+    cam.add_shake()          #Laat de camera schudden
+    player.reset_position()  #Zet de speler terug naar de startpositie
+
     gun.bullets = 2
     gun.bullet_type = 'NORMAL'
-    gun.super_shots_left = 0
-    stopwatch.reset()
-    active_hook = None
+    gun.super_shots_left = 0  #Reset het wapen naar standaard
+
+    stopwatch.reset()        #Reset de tijd
+    active_hook = None       #Verwijder een actieve hook
 
 
 def start_level(level_path):
@@ -296,13 +304,12 @@ def tile_function_update():
             if player.rect.colliderect(tile.rect):
                 die()
 
-
 def draw_menu(screen):
     """
     Draws a level selection menu with numbered buttons.
     Shows 10 levels per page.
     """
-
+    #Kleur menu achtergrond
     screen.fill((125, 190, 255))
 
     title = font_klein.render("Rage Game", True, (0, 0, 0))
@@ -333,8 +340,10 @@ def draw_menu(screen):
 
         if level_index in best_times:
             text = font_menu.render(f"{level_index + 1}  {best_times[level_index]}", True, BLACK)
+            #Laat levelnummer en beste tijd zien
         else:
             text = font_menu.render(str(level_index + 1), True, BLACK)
+            #Laat alleen het levelnummer zien
 
 
         screen.blit(text, text.get_rect(center=rect.center))
@@ -342,17 +351,17 @@ def draw_menu(screen):
     hint = font_menu.render("LEFT/RIGHT = page   UP/DOWN = level   ENTER = play", True, BLACK)
     screen.blit(hint, hint.get_rect(center=(screen.get_width() // 2, 740)))
 
-    # instellingen knop rechts bovenaan, ziet eruit als een level-knop
+    #Settings knop rechts bovenaan
     settings_knop = pygame.Rect(settings_rect.left - 6, settings_rect.top - 4,
                                 settings_rect.width + 12, settings_rect.height + 8)
     pygame.draw.rect(screen, WHITE, settings_knop)
     pygame.draw.rect(screen, BLACK, settings_knop, 2)
     screen.blit(hint3, settings_rect)
 
-# breedte en hoogte van de toggles en de volumebalk
+#Breedte en hoogte van de toggles en de volumebalk
 TOGGLE_W = 300
 TOGGLE_H = 46
-KNOB_MARGE = 5       # ruimte tussen de rand en het schuifblokje
+KNOB_MARGE = 5       #Ruimte tussen de rand en het schuifblokje
 SLIDER_W = 400
 SLIDER_H = 30
 
@@ -360,32 +369,32 @@ def get_slider_rect(screen):
     cx = screen.get_width() // 2
     return pygame.Rect(cx - SLIDER_W // 2, 310, SLIDER_W, SLIDER_H)
 
-# tekent een knop die eruitziet als de level-knoppen in het menu
-def teken_menu_knop(screen, rect, tekst, geselecteerd=False):
+#Tekent een knop
+def knop(screen, rect, tekst, geselecteerd=False):
     kleur = GREEN if geselecteerd else WHITE
     pygame.draw.rect(screen, kleur, rect)
     pygame.draw.rect(screen, BLACK, rect, 2)
     lbl = font_menu.render(tekst, True, BLACK)
     screen.blit(lbl, lbl.get_rect(center=rect.center))
 
-# tekent een toggle met een schuifblokje, links=uit rechts=aan
+#Tekent een toggle met een schuifblokje, links=uit rechts=aan
 def draw_sliding_toggle(screen, cx, y, label, value):
     lbl = font_menu.render(label, True, BLACK)
     screen.blit(lbl, (cx - 260, y + (TOGGLE_H - lbl.get_height()) // 2))
 
-    # buitenste balk
+    #Buitenste balk
     track = pygame.Rect(cx + 10, y, TOGGLE_W, TOGGLE_H)
     pygame.draw.rect(screen, WHITE, track)
     pygame.draw.rect(screen, BLACK, track, 2)
 
-    # vierkant blokje dat schuift
+    #Vierkant blokje dat schuift
     knob_size = TOGGLE_H - KNOB_MARGE * 2
     knob_x = track.right - KNOB_MARGE - knob_size if value else track.left + KNOB_MARGE
     knob = pygame.Rect(knob_x, track.top + KNOB_MARGE, knob_size, knob_size)
     pygame.draw.rect(screen, (180, 180, 180), knob)
     pygame.draw.rect(screen, BLACK, knob, 2)
 
-    # on/off tekst in de balk
+    #On en off tekst in de balk
     off_lbl = font_menu.render("OFF", True, BLACK)
     on_lbl  = font_menu.render("ON",  True, BLACK)
     midden_links  = track.left  + KNOB_MARGE + knob_size + (TOGGLE_W - knob_size - KNOB_MARGE * 2) // 4
@@ -396,52 +405,54 @@ def draw_sliding_toggle(screen, cx, y, label, value):
     return track
 
 def draw_settings(screen):
-    screen.fill((125, 190, 255))
-    cx = screen.get_width() // 2
 
-    # titel bovenaan het scherm
+    #Tekent achtergrond kleur
+    screen.fill((125, 190, 255))
+    cx = screen.get_width() // 2    #Midden van de X-as
+
+    #Titel bovenaan het scherm
     title = font_klein.render("Settings", True, BLACK)
     screen.blit(title, title.get_rect(center=(cx, 70)))
 
-    # home knop ziet eruit als een level-knop
-    home_knop = pygame.Rect(homekonp_rect.left - 6, homekonp_rect.top - 4,
-                            homekonp_rect.width + 12, homekonp_rect.height + 8)
-    teken_menu_knop(screen, home_knop, "Home")
+    #Home knop
+    home_knop = pygame.Rect(homeknop_rect.left - 6, homeknop_rect.top - 4,
+                            homeknop_rect.width + 12, homeknop_rect.height + 8)
+    knop(screen, home_knop, "Home")
 
-    # volumelabel vlak boven de balk
+    #Volume tekst boven de Volumebalk
     slider = get_slider_rect(screen)
     vol_lbl = font_menu.render(f"Volume: {volume}%", True, BLACK)
     screen.blit(vol_lbl, vol_lbl.get_rect(midbottom=(slider.centerx, slider.top - 4)))
 
-    # volumebalk achtergrond
+    #Volumebalk achtergrond
     pygame.draw.rect(screen, WHITE, slider)
     pygame.draw.rect(screen, BLACK, slider, 2)
 
-    # gevuld deel van de balk
+    #Gevulde deel van de balk
     fill_w = int(slider.width * volume / 100)
     fill = pygame.Rect(slider.left, slider.top, fill_w, slider.height)
     pygame.draw.rect(screen, (100, 160, 220), fill)
 
-    # vierkant schuifblokje op de volumebalk
+    #Schuifblokje in de volumebalk
     knob_x = max(slider.left, min(slider.left + fill_w - SLIDER_H // 2, slider.right - SLIDER_H))
     knob = pygame.Rect(knob_x, slider.top, SLIDER_H, SLIDER_H)
     pygame.draw.rect(screen, WHITE, knob)
     pygame.draw.rect(screen, BLACK, knob, 2)
 
-    # de drie toggles voor de opties
-    gap = 60
-    ty = 385
-    draw_sliding_toggle(screen, cx, ty,           "Fullscreen",   fullscreen)
+    gap = 60 #Gat tussen de 2 opties
+    ty = 385 #Y-as positie van de 2 opties
+
+    #Opties
+    #draw_sliding_toggle(screen, cx, ty,           "Fullscreen",   fullscreen)
     draw_sliding_toggle(screen, cx, ty + gap,     "Show Speed",   show_speed)
     draw_sliding_toggle(screen, cx, ty + gap * 2, "Show Deaths",  show_deaths)
 
-    # scheidingslijn en kopje voor de besturingslijst
     sep_y = ty + gap * 3 + 8
-    pygame.draw.line(screen, BLACK, (cx - 230, sep_y), (cx + 230, sep_y), 1)
+
     ctrl_title = font_menu.render("Controls", True, BLACK)
     screen.blit(ctrl_title, ctrl_title.get_rect(center=(cx, sep_y + 16)))
 
-    # lijst met toetsen en wat ze doen
+    #Lijst met toetsen en wat ze doen
     controls = [
         ("Mouse click", "Shoot"),
         ("H",           "Hook"),
@@ -450,10 +461,13 @@ def draw_settings(screen):
         ("ESC",         "Back to menu"),
     ]
     for i, (key, desc) in enumerate(controls):
-        ry = sep_y + 44 + i * 26
-        screen.blit(font_menu.render(key,  True, BLACK), (cx - 180, ry))
-        screen.blit(font_menu.render(desc, True, BLACK), (cx + 20,  ry))
+        ry = sep_y + 44 + i * 26  #Berekend de Y-positie
 
+        screen.blit(font_menu.render(key, True, BLACK), (cx - 180, ry))
+        #Tekent de toets links
+
+        screen.blit(font_menu.render(desc, True, BLACK), (cx + 20, ry))
+        #Tekent de uitleg rechts
 
 def toggle_fullscreen():
     global screen, fullscreen
@@ -465,34 +479,36 @@ def toggle_fullscreen():
     else:
         screen = pygame.display.set_mode(SCREENSIZE, pygame.RESIZABLE, vsync=1)
 
-def _parse_time(s):
+def time_to_seconds(s):
     try:
-        m, rest = s.split(":")
-        sec, ms = rest.split(".")
+        m, rest = s.split(":")         #Splitst minuten van de rest
+        sec, ms = rest.split(".")      #Splitst seconden en milliseconden
         return int(m) * 60 + int(sec) + int(ms) / 100
+        #Zet alles om naar totale tijd in seconden
     except Exception:
-        return float("inf")
+        return float("inf")            #Als het fout gaat dan geef infinity terug
+
 
 def draw_level_complete(screen):
     overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
-    overlay.fill((0, 0, 0, 160))
+    overlay.fill((0, 0, 0, 160))       #Maakt een zwarte transparante achtergrond
     screen.blit(overlay, (0, 0))
 
-    cx = screen.get_width() // 2
+    cx = screen.get_width() // 2       #Middelpunt van het scherm
 
     title = font_klein.render("Level Complete!", True, (255, 220, 50))
-    screen.blit(title, title.get_rect(center=(cx, 200)))
+    screen.blit(title, title.get_rect(center=(cx, 200)))  #Titel bovenaan
 
     time_surf = font_klein.render(f"Time:   {complete_time}", True, (255, 255, 255))
-    screen.blit(time_surf, time_surf.get_rect(center=(cx, 290)))
+    screen.blit(time_surf, time_surf.get_rect(center=(cx, 290)))  #Laat je tijd zien
 
     death_surf = font_klein.render(f"Deaths: {complete_deaths}", True, (255, 100, 100))
-    screen.blit(death_surf, death_surf.get_rect(center=(cx, 360)))
+    screen.blit(death_surf, death_surf.get_rect(center=(cx, 360)))  #Laat aantal deaths zien
 
-    best = best_times.get(level_id, None)
+    best = best_times.get(level_id, None)   #Haalt de beste tijd van dit level op
     if best:
         best_surf = font_menu.render(f"Best: {best}", True, (100, 255, 180))
-        screen.blit(best_surf, best_surf.get_rect(center=(cx, 430)))
+        screen.blit(best_surf, best_surf.get_rect(center=(cx, 430)))  #Laat beste tijd zien
 
     hint = font_menu.render("Press ENTER to continue", True, (180, 180, 180))
     screen.blit(hint, hint.get_rect(center=(cx, 520)))
@@ -669,11 +685,11 @@ while True:
             cam.resize(SCREENSIZE)
             screen = pygame.display.set_mode(SCREENSIZE, flags=pygame.RESIZABLE, vsync=1)
 
-        # menu input
+        #Menu input
         if state == "menu":
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                # check of de instellingen knop is geklikt
+                #Check of de instellingen knop is geklikt
                 settings_knop = pygame.Rect(settings_rect.left - 6, settings_rect.top - 4,
                                             settings_rect.width + 12, settings_rect.height + 8)
                 if settings_knop.collidepoint(event.pos):
@@ -703,7 +719,6 @@ while True:
                         level_id -= 1
                         huidig_level = f"levels/{level_files[level_id]}"
                         lvl_switch.play()
-
                         
                         menu_page = level_id // LEVELS_PER_PAGE
                 elif event.key == pygame.K_DOWN:
@@ -711,7 +726,6 @@ while True:
                         level_id += 1
                         huidig_level = f"levels/{level_files[level_id]}"
                         lvl_switch.play()
-
 
                         menu_page = level_id // LEVELS_PER_PAGE
 
@@ -777,48 +791,62 @@ while True:
                         player.derope()
                         active_hook = None
 
-        elif state == "level_complete":
-            if event.type == pygame.KEYDOWN:
-                if event.key in (pygame.K_RETURN, pygame.K_ESCAPE):
-                    state = "menu"
-                    deaths = 0
-                    start_music("menu")
 
         elif state == "settings":
+
             cx = screen.get_width() // 2
             gap = 60
-            ty  = 385
-            fs_rect  = pygame.Rect(cx + 10, ty,          TOGGLE_W, TOGGLE_H)
-            spd_rect = pygame.Rect(cx + 10, ty + gap,    TOGGLE_W, TOGGLE_H)
-            dth_rect = pygame.Rect(cx + 10, ty + gap * 2,TOGGLE_W, TOGGLE_H)
-            slider   = get_slider_rect(screen)
-            home_knop = pygame.Rect(homekonp_rect.left - 6, homekonp_rect.top - 4,
-                                    homekonp_rect.width + 12, homekonp_rect.height + 8)
+            start_y = 385
+
+            #Knoppen voor de instellingen
+            fs_rect = pygame.Rect(cx + 10, start_y, TOGGLE_W, TOGGLE_H)
+            spd_rect = pygame.Rect(cx + 10, start_y + gap, TOGGLE_W, TOGGLE_H)
+            dth_rect = pygame.Rect(cx + 10, start_y + gap * 2, TOGGLE_W, TOGGLE_H)
+
+            #Volum slider
+            slider = get_slider_rect(screen)
+
+            #Home knop
+            home_knop = pygame.Rect(
+                homeknop_rect.left - 6,
+                homeknop_rect.top - 4,
+                homeknop_rect.width + 12,
+                homeknop_rect.height + 8
+
+            )
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if home_knop.collidepoint(event.pos):
-                    state = "menu"
+                    state = "menu"  # Terug naar menu
+
                 elif fs_rect.collidepoint(event.pos):
-                    toggle_fullscreen()
+                    toggle_fullscreen()  # Zet fullscreen aan of uit
                     background = make_background(SCREENSIZE)
+
                 elif spd_rect.collidepoint(event.pos):
-                    show_speed = not show_speed
+                    show_speed = not show_speed  #Speed Laten zien of niet
+
                 elif dth_rect.collidepoint(event.pos):
-                    show_deaths = not show_deaths
-                elif pygame.Rect(slider.left, slider.top - 6, slider.width, slider.height + 12).collidepoint(event.pos):
-                    slider_dragging = True
-                    volume = max(0, min(100, int((event.pos[0] - slider.left) / slider.width * 100)))
-                    pygame.mixer.music.set_volume(volume / 100)
+                    show_deaths = not show_deaths  #Deaths Laten zien of niet
 
-            if event.type == pygame.MOUSEBUTTONUP:
-                slider_dragging = False
+                else:
+                    slider_hitbox = pygame.Rect(slider.left, slider.top - 6, slider.width, slider.height + 12)
+                    if slider_hitbox.collidepoint(event.pos):
+                        slider_dragging = True
+                        volume = int((event.pos[0] - slider.left) / slider.width * 100)
+                        volume = max(0, min(100, volume))  #Houdt het volume tussen 0 en 100
+                        pygame.mixer.music.set_volume(volume / 100)
 
-            if event.type == pygame.MOUSEMOTION and slider_dragging:
-                volume = max(0, min(100, int((event.pos[0] - slider.left) / slider.width * 100)))
+            elif event.type == pygame.MOUSEBUTTONUP:
+                slider_dragging = False  #Stop met verplaatsem van de slider
+
+            elif event.type == pygame.MOUSEMOTION and slider_dragging:
+                volume = int((event.pos[0] - slider.left) / slider.width * 100)
+                volume = max(0, min(100, volume))  #Houd volume tussen 0 en 100
                 pygame.mixer.music.set_volume(volume / 100)
 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                state = "menu"
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                state = "menu"  #Als je op escape drukt dan ga je terug naar het menu
 
     # draw en update
     if state == "menu":
@@ -840,7 +868,7 @@ while True:
             complete_time = stopwatch.get_formatted_time()
             complete_deaths = deaths
             level_times[level_id] = complete_time
-            if level_id not in best_times or stopwatch.get_time() < _parse_time(best_times[level_id]):
+            if level_id not in best_times or stopwatch.get_time() < time_to_seconds(best_times[level_id]):
                 best_times[level_id] = complete_time
                 save_best_times(best_times)
             state = "level_complete"
@@ -857,11 +885,11 @@ while True:
             speed = 0
         speed_pixels = round(speed, 2)  # optioneel afronden
 
-        if show_deaths:
+        if show_deaths: #Laat aantal deaths zien
             death_text = font_klein.render(f"Deaths: {deaths}", True, (200, 50, 50))
             screen.blit(death_text, (20, 20))
 
-        if show_speed:
+        if show_speed: #Laat snelheid zien
             speed_text = font_klein.render(f"Speed: {speed_pixels}", True, (0, 0, 0))
             screen.blit(speed_text, (20, screen.get_height() - 50))
 
