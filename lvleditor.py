@@ -1,4 +1,5 @@
 import pygame, sys, json, os, subprocess
+import time
 
 pygame.init()
 pygame.font.init()
@@ -50,9 +51,11 @@ def level_path(level_id):
 
 def go_to_menu():
     save_level()
-    pygame.quit()
-    subprocess.Popen([sys.executable, "main.py"])
-    sys.exit()
+    main = subprocess.Popen([sys.executable, "main.py"])
+    time.sleep(1)
+    if main.poll() == None:
+        pygame.quit()
+        sys.exit()
 
 def get_menu_button_rect():
     text = menu_font.render("Menu", True, BLACK)

@@ -109,7 +109,7 @@ clock = pygame.time.Clock()
 player_group = pygame.sprite.GroupSingle()
 gun_group = pygame.sprite.GroupSingle()
 blocks = pygame.sprite.Group()
-buttons = pygame.sprite.Group()
+update_texts = pygame.sprite.Group()
 
 grid_size = 32
 lowest = 0
@@ -450,9 +450,6 @@ class Tile(pygame.sprite.Sprite):
         self.friction = 30
         self.rect = self.image.get_rect(topleft=(gx * grid_size, gy * grid_size))
 
-    def update(self):
-        pass
-
     def draw(self):
         screen.blit(self.image, cam.apply_rect(self.rect))
 
@@ -509,7 +506,7 @@ gun = gun_group.sprite
 button1 = Button(500, 50, 175, 30, True, GREEN, 30, 5, -3, "BULLETS:  " + str(gun.bullets))
 button2 = Button(500, 100, 175, 30, True, GREEN, 30, 5, -3, "BULLET TYPE: " + str(gun.bullet_type))
 button3 = Button(500, 150, 175, 30, True, GREEN, 30, 5, -3, "TIME: 00:00.00")
-buttons.add(button1, button2, button3)
+update_texts.add(button1, button2, button3)
 stopwatch = Stopwatch()
 stopwatch.start()
 start_music("menu")
@@ -724,7 +721,7 @@ while True:
         button2.text = "BULLET TYPE: " + str(gun.bullet_type)
         button3.text = "TIME: " + stopwatch.get_formatted_time()
 
-        for b in buttons:
+        for b in update_texts:
             b.update()
             b.draw()
 
