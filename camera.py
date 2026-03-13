@@ -9,7 +9,7 @@ class Camera:
         self.shake_intensity = 0                #Hoe sterk de shake is
 
     def add_shake(self, frames=10, intensity=7):
-        self.shake_frames = frames              #Zet aantal shake-frames
+        self.shake_frames = frames              #Zet aantal shake frames
         self.shake_intensity = intensity        #Zet sterkte van de shake
 
     def update_shake(self):

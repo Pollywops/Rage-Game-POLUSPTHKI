@@ -368,20 +368,21 @@ def draw_menu(screen):
 def toggle_fullscreen():
     global screen, fullscreen
 
-    fullscreen = not fullscreen
+    fullscreen = not fullscreen  #Zet fullscreen aan of uit
 
     if fullscreen:
-        screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+        screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)  #Volledig scherm
     else:
-        screen = pygame.display.set_mode(SCREENSIZE, pygame.RESIZABLE, vsync=1)
+        screen = pygame.display.set_mode(SCREENSIZE, pygame.RESIZABLE, vsync=1)  #Normaal scherm
+
 
 def time_to_seconds(s):
     try:
-        m, rest = s.split(":")
-        sec, ms = rest.split(".")
-        return int(m) * 60 + int(sec) + int(ms) / 100
+        m, rest = s.split(":")      #Splitst minuten van de rest
+        sec, ms = rest.split(".")   #Splitst seconden en honderdsten
+        return int(m) * 60 + int(sec) + int(ms) / 100  #Zet tijd om naar seconden
     except Exception:
-        return float("inf")
+        return float("inf")         #Geeft een grote waarde terug als het fout gaat
 
 def _parse_time(s):
     return time_to_seconds(s)
