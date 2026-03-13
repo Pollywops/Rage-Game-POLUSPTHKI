@@ -108,8 +108,9 @@ buttons = pygame.sprite.Group()
 grid_size = 32
 lowest = 0
 
-with open("tiledata.json", "r") as f:
-    tiledata = json.load(f)
+file = open("tiledata.json", "r")
+tiledata = json.load(file)
+file.close()
 
 tile_dicts = tiledata["tiles"]
 
@@ -122,12 +123,13 @@ for tile in tile_dicts:
         (grid_size, grid_size)
     )
     tile_surfaces.append(surf)
+
 MUSIC_ENDEVENT = pygame.USEREVENT + 1
 pygame.mixer.music.set_endevent(MUSIC_ENDEVENT)
 
 current_music_state = None
 current_loop = None
-music_phase = None   # "intro" of "loop"
+music_phase = None   #intro of loop
 
 
 def start_music(state_name):
@@ -156,26 +158,21 @@ def start_music(state_name):
     pygame.mixer.music.queue(loop)
 
 
-def parse_marker(data, key):
-    marker = data.get(key)
-    if isinstance(marker, dict) and "x" in marker and "y" in marker:
-        return int(marker["x"]), int(marker["y"])
-    if isinstance(marker, list) and len(marker) >= 2:
-        return int(marker[0]), int(marker[1])
-    return None
+def krijg_info(data, type):
+    marker = data.get(type)
+    return int(marker[0]), int(marker[1])
 
 def load_level(path):
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
+    f = open(path, "r", encoding="utf-8")
+    data = json.load(f)
+    f.close()
 
-        matrix = data.get("level")
-        spawn = parse_marker(data, "spawn")
-        end_pos = parse_marker(data, "end")
-        offset = data.get("offset", [0, 0])
-        return matrix, spawn, end_pos, offset
-    except (OSError, json.JSONDecodeError, ValueError, TypeError):
-        return None, None, None, [0, 0]
+    matrix = data.get("level")
+    spawn = krijg_info(data, "spawn")
+    end_pos = krijg_info(data, "end")
+    offset = data.get("offset", [0, 0])
+
+    return matrix, spawn, end_pos, offset
 
 def build_blocks_from_matrix(matrix, offset):
     global current_level_matrix
@@ -209,26 +206,20 @@ def create_low_border():
         if lowest is None or tile.rect.bottom > lowest:
             lowest = tile.rect.bottom
     return lowest
+deaths = 0
 
-def reset_run_state():
-    player.reset_position()
+def reset_run_state(die):
+    global deaths, huidig_level
     gun.bullets = 2
     gun.bullet_type = 'NORMAL'
     gun.super_shots_left = 0
     stopwatch.reset()
-    active_hook = None
-
-def die():
-    global deaths, active_hook
-    deaths += 1
-    cam.add_shake()
+    start_level(huidig_level)
     player.reset_position()
-    gun.bullets = 2
-    gun.bullet_type = 'NORMAL'
-    gun.super_shots_left = 0
-    stopwatch.reset()
+    if die:
+        deaths += 1
+        cam.add_shake()
     active_hook = None
-
 
 def start_level(level_path):
     global end_rect
@@ -253,8 +244,6 @@ def start_level(level_path):
         )
     else:
         end_rect = None
-
-    reset_run_state()
 
 
 def get_tile_info_at_world(x, y):
@@ -294,14 +283,10 @@ def tile_function_update():
                 gun.activate_super_shots(2)
         elif info.get("spike", False):
             if player.rect.colliderect(tile.rect):
-                die()
+                reset_run_state(True)
 
 
 def draw_menu(screen):
-    """
-    Draws a level selection menu with numbered buttons.
-    Shows 10 levels per page.
-    """
 
     screen.fill((125, 190, 255))
 
@@ -497,8 +482,9 @@ def draw_level_complete(screen):
     hint = font_menu.render("Press ENTER to continue", True, (180, 180, 180))
     screen.blit(hint, hint.get_rect(center=(cx, 520)))
 bg_raw = pygame.image.load('textures/background.png').convert()
-def make_background(screen_size):
-    sw, sh = screen_size
+
+def make_background(SCREENSIZE):
+    sw, sh = SCREENSIZE
 
     scale = 1.35
     bw = int(sw * scale)
@@ -507,30 +493,24 @@ def make_background(screen_size):
     return pygame.transform.smoothscale(bg_raw, (bw, bh))
 
 def draw_background(screen, background, player):
-    sw, sh = screen.get_size()
+    sw, sh = SCREENSIZE
     bw, bh = background.get_size()
 
-    # hoeveel de achtergrond mag bewegen
     max_x = bw - sw
     max_y = bh - sh
 
-    # klein parallax-effect
     parallax_x = 0.05
     parallax_y = 0.02
 
-    # beweging t.o.v. spawn
     dx = player.rect.centerx - player.start_pos[0]
     dy = player.rect.centery - player.start_pos[1]
 
-    # standaard middenpositie
     base_x = (sw - bw) / 2
     base_y = (sh - bh) / 2
 
-    # gewenste achtergrondpositie
     bg_x = base_x - dx * parallax_x
     bg_y = base_y - dy * parallax_y
 
-    # clampen zodat je nooit buiten de afbeelding kijkt
     bg_x = max(sw - bw, min(0, bg_x))
     bg_y = max(sh - bh, min(0, bg_y))
 
@@ -601,26 +581,6 @@ class Button(pygame.sprite.Sprite):
         text_surface = self.font.render(self.text, True, BLACK)
         screen.blit(text_surface, [self.rect.topleft[0] + self.fontoffsetX, self.rect.topleft[1]])
 
-class Projectile(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-    def start(self, x, y, w ,h, angle, speed):
-        self.active = True
-        self.image = pygame.Surface((w, h))
-        self.transformed_image = pygame.transform.rotate(self.image, -math.degrees(angle))
-        self.rect = self.transformed_image.get_rect()
-        self.transformed_image.fill(RED)
-        self.rect.centerx = x
-        self.rect.centery = y
-        self.angle = angle
-        self.speed = speed
-    def update(self):
-        self.alphax = math.cos(self.angle) * self.speed
-        self.alphay = math.sin(self.angle) * self.speed
-        self.rect.centerx += self.alphax
-        self.rect.centery += self.alphay
-    def draw(self, screen, cam):
-        screen.blit(self.transformed_image, cam.apply_rect(self.rect))
 
 # hier zijn de player, gun, blocks, buttons en stopwatch aangemaakt, en de camera is ingesteld om te volgen op de player
 cam = Camera(SCREENSIZE)
@@ -739,7 +699,7 @@ while True:
                 elif event.key == pygame.K_RETURN:
                     if huidig_level:
                         deaths = 0
-                        start_level(huidig_level)
+                        reset_run_state(False)
                         lowest = create_low_border()
                         start_music("game")
                         state = "game"
@@ -758,18 +718,10 @@ while True:
                 if event.key == pygame.K_ESCAPE:
                     state = "menu"
                     start_music('menu')
-                elif event.key == pygame.K_r:
-                    if gun.bullet_type == 'SUPER':
-                        gun.bullet_type = 'NORMAL'
-                        gun.super_shots_left = 0
-                        #print("NORMAL BULLET ACTIVATED")
-                    else:
-                        gun.activate_super_shots(2)
-                        #print("SUPER BULLET ACTIVATED")
                 elif event.key == pygame.K_t:
-                    start_level(huidig_level)
+                    reset_run_state(False)
                     lowest = create_low_border()
-                    reset_run_state()
+                    reset_run_state(False)
                 elif event.key == pygame.K_h:
                     if not active_hook:
                         active_hook = hook(player.rect.centerx, player.rect.centery, 10,10, gun.angle,30)
@@ -834,7 +786,7 @@ while True:
         cam.update_center(player.rect)
         player.update(blocks, gun)
         if player.rect.bottom > lowest + 300:
-            die()
+            reset_run_state(True)
         tile_function_update()
         if end_rect and player.rect.colliderect(end_rect):
             complete_time = stopwatch.get_formatted_time()

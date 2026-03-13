@@ -5,7 +5,7 @@ class HProjectile(pygame.sprite.Sprite):
         super().__init__()
         self.image = pygame.Surface((w, h))
         self.rect = self.image.get_rect()
-        self.image.fill((0, 0, 0))
+        self.image.fill((255, 255, 255))
         self.pos = pygame.Vector2(x, y)
         self.rect.center = (round(self.pos.x), round(self.pos.y))
         self.angle = angle
@@ -26,7 +26,7 @@ class HProjectile(pygame.sprite.Sprite):
 
         start = pygame.Vector2(cam.apply_rect(player.rect).center)
         end = pygame.Vector2(cam.apply_rect(self.rect).center)
-        pygame.draw.line(screen, (0, 0, 0), start, end, 3)
+        pygame.draw.line(screen, (255, 255, 255), start, end, 3)
 
     def draw(self, screen, cam):
         screen.blit(self.image, cam.apply_rect(self.rect))
