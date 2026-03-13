@@ -209,17 +209,22 @@ def create_low_border():
 deaths = 0
 
 def reset_run_state(die):
-    global deaths, huidig_level
+    global deaths, huidig_level, active_hook
+
     gun.bullets = 2
     gun.bullet_type = 'NORMAL'
     gun.super_shots_left = 0
+
     stopwatch.reset()
     start_level(huidig_level)
+
     player.reset_position()
+    player.derope()      # stop rope physics
+    active_hook = None   # delete the hook projectile
+
     if die:
         deaths += 1
         cam.add_shake()
-    active_hook = None
 
 def start_level(level_path):
     global end_rect
