@@ -39,7 +39,7 @@ hint3 = font_klein.render("Settings", True, (0, 0, 0))
 settings_rect = hint3.get_rect(topright=(770, 50))
 
 home = font_klein.render("Home", True, (0, 0, 0))
-homekonp_rect = home.get_rect(topleft=(30,50))
+homeknop_rect= home.get_rect(topleft=(30, 50))
 
 plus_text = font_klein.render("+", True, (0, 0, 0))
 plus_rect = plus_text.get_rect()
@@ -97,13 +97,13 @@ GRAY = (128,128,128)
 ##############################
 
 
-# hier worden de pygame window en clock aangemaakt, en de groepen voor de player, gun, blocks en buttons.
+# hier worden de pygame window en clock aangemaakt, en de groepen voor de player, gun, blocks en texts.
 screen = pygame.display.set_mode(SCREENSIZE,flags=pygame.RESIZABLE, vsync=1)
 clock = pygame.time.Clock()
 player_group = pygame.sprite.GroupSingle()
 gun_group = pygame.sprite.GroupSingle()
 blocks = pygame.sprite.Group()
-buttons = pygame.sprite.Group()
+texts = pygame.sprite.Group()
 
 grid_size = 32
 lowest = 0
@@ -394,8 +394,8 @@ def draw_settings(screen):
     screen.blit(title, title.get_rect(center=(cx, 70)))
 
     # home knop ziet eruit als een level-knop
-    home_knop = pygame.Rect(homekonp_rect.left - 6, homekonp_rect.top - 4,
-                            homekonp_rect.width + 12, homekonp_rect.height + 8)
+    home_knop = pygame.Rect(homeknop_rect.left - 6, homeknop_rect.top - 4,
+                            homeknop_rect.width + 12, homeknop_rect.height + 8)
     teken_menu_knop(screen, home_knop, "Home")
 
     # volumelabel vlak boven de balk
@@ -566,28 +566,27 @@ class Stopwatch:
 # deze class maakt de knoppen aan, deze kunnen worden geupdate en getekend op het scherm.
 # De knoppen kunnen ook transparant zijn, en er kan tekst op worden gezet met een bepaalde fontgrootte en offset.
 
-class Button(pygame.sprite.Sprite):
+class Update_text(pygame.sprite.Sprite):
     def __init__(self,x,y,w,h,Transparent, color,fontsize, fontoffsetX, fontoffsetY, text):
         super().__init__()
         self.image = pygame.Surface((w,h))
         self.image.fill(color)
         self.rect = self.image.get_rect()
         self.rect.topleft = [x , y]
-        self.font = pygame.font.SysFont('Arial', fontsize)
+        self.font = font_klein
         self.fontoffsetX = fontoffsetX
         self.fontoffsetY = fontoffsetY
+        self.color = color
         self.Transparent = Transparent
         self.text = text
-    def update(self):
-        pass
     def draw(self):
         if not self.Transparent:
             screen.blit(self.image, [self.rect.topleft,self.rect.topleft])
-        text_surface = self.font.render(self.text, True, BLACK)
+        text_surface = self.font.render(self.text, True, self.color)
         screen.blit(text_surface, [self.rect.topleft[0] + self.fontoffsetX, self.rect.topleft[1]])
 
 
-# hier zijn de player, gun, blocks, buttons en stopwatch aangemaakt, en de camera is ingesteld om te volgen op de player
+# hier zijn de player, gun, blocks, texts en stopwatch aangemaakt, en de camera is ingesteld om te volgen op de player
 cam = Camera(SCREENSIZE)
 
 player_group.add(Player(500,0,50,50,BLUE))
@@ -596,19 +595,14 @@ player = player_group.sprite
 gun_group.add(Gun(10,10))
 gun = gun_group.sprite
 
-button1 = Button(500, 50, 175, 30, True, GREEN,
-                 30, 5,fontoffsetY= -3,text= 'BULLETS:  ' + str(gun.bullets))
-button2 = Button(500,100, 175, 30, True, GREEN,
-                 30, 5,fontoffsetY= -3,text= 'BULLET TYPE: ' + str(gun.bullet_type))
-
-
 stopwatch = Stopwatch()
 stopwatch.start()
 
-button3 = Button(500,150, 175, 30, True, GREEN,
-                 30, 5,fontoffsetY= -3,text= 'TIME: 00:00.00')
+time_text = Update_text(20, 200, 175, 30, True, GREEN,
+                      30, 5, fontoffsetY= -3, text= 'TIME: 00:00.00')
 
-buttons.add(button1,button2,button3)
+texts.add(time_text)
+
 start_music("menu")
 active_hook = None
 
@@ -749,8 +743,8 @@ while True:
             spd_rect = pygame.Rect(cx + 10, ty + gap,    TOGGLE_W, TOGGLE_H)
             dth_rect = pygame.Rect(cx + 10, ty + gap * 2,TOGGLE_W, TOGGLE_H)
             slider   = get_slider_rect(screen)
-            home_knop = pygame.Rect(homekonp_rect.left - 6, homekonp_rect.top - 4,
-                                    homekonp_rect.width + 12, homekonp_rect.height + 8)
+            home_knop = pygame.Rect(homeknop_rect.left - 6, homeknop_rect.top - 4,
+                                    homeknop_rect.width + 12, homeknop_rect.height + 8)
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if home_knop.collidepoint(event.pos):
@@ -826,12 +820,9 @@ while True:
             b.update()
             b.draw()
 
-        button1.text = 'BULLETS: ' + str(gun.bullets)
-        button2.text = 'BULLET TYPE: ' + str(gun.bullet_type)
-        button3.text = 'TIME: ' + stopwatch.get_formatted_time()
+        time_text.text = 'TIME: ' + stopwatch.get_formatted_time()
 
-        for b in buttons:
-            b.update()
+        for b in texts:
             b.draw()
 
         gun.draw(screen, cam)
