@@ -1,4 +1,4 @@
-import pygame, sys, json, os
+import pygame, sys, json, os, subprocess
 
 pygame.init()
 pygame.font.init()
@@ -17,9 +17,8 @@ BLUE = (0, 120, 255)
 screen = pygame.display.set_mode(SCREENSIZE, flags=pygame.RESIZABLE, vsync=1)
 clock = pygame.time.Clock()
 
-file = open("tiledata.json", "r", encoding="utf-8")
-tiledata = json.load(file)
-file.close()
+with open("tiledata.json", "r", encoding="utf-8") as file:
+    tiledata = json.load(file)
 
 tile_defs = tiledata["tiles"]
 tile_surfaces = []
@@ -44,16 +43,29 @@ MAX_LEVEL = 20
 
 title_font = pygame.font.SysFont("Arial", 24)
 small_font = pygame.font.SysFont("Arial", 18)
+menu_font = pygame.font.SysFont("Arial", 24)
 
 def level_path(level_id):
     return f"levels/level{level_id}.json"
 
+def go_to_menu():
+    save_level()
+    pygame.quit()
+    subprocess.Popen([sys.executable, "main.py"])
+    sys.exit()
+
+def get_menu_button_rect():
+    text = menu_font.render("Menu", True, BLACK)
+    rect = text.get_rect(topright=(screen.get_width() - 20, 20))
+    button_rect = pygame.Rect(rect.left - 10, rect.top - 6, rect.width + 20, rect.height + 12)
+    return button_rect, text, rect
+
 def save_level():
     if placed:
-        min_x = min(x for x,y in placed)
-        max_x = max(x for x,y in placed)
-        min_y = min(y for x,y in placed)
-        max_y = max(y for x,y in placed)
+        min_x = min(x for x, y in placed)
+        max_x = max(x for x, y in placed)
+        min_y = min(y for x, y in placed)
+        max_y = max(y for x, y in placed)
     else:
         min_x = max_x = min_y = max_y = 0
 
@@ -72,9 +84,8 @@ def save_level():
         "offset": [min_x, min_y]
     }
 
-    file = open(level_path(current_level), "w", encoding="utf-8")
-    json.dump(data, file, indent=2)
-    file.close()
+    with open(level_path(current_level), "w", encoding="utf-8") as file:
+        json.dump(data, file, indent=2)
 
 def load_level(level_id):
     global current_level
@@ -88,9 +99,8 @@ def load_level(level_id):
     if not os.path.exists(path):
         return
 
-    file = open(path, "r", encoding="utf-8")
-    data = json.load(file)
-    file.close()
+    with open(path, "r", encoding="utf-8") as file:
+        data = json.load(file)
 
     matrix = data.get("level", [])
     offset = data.get("offset", [0, 0])
@@ -109,7 +119,6 @@ def load_level(level_id):
     if end:
         markers["end"] = [end[0] + off_x, end[1] + off_y]
 
-
 def clear_level():
     placed.clear()
     history.clear()
@@ -126,7 +135,11 @@ def draw_marker(pos, color):
     rect = pygame.Rect(gx * GRID - cam_x, gy * GRID - cam_y, GRID, GRID)
     pygame.draw.rect(screen, color, rect, 3)
 
-
+def draw_menu_button():
+    button_rect, text, text_rect = get_menu_button_rect()
+    pygame.draw.rect(screen, WHITE, button_rect)
+    pygame.draw.rect(screen, BLACK, button_rect, 2)
+    screen.blit(text, text_rect)
 
 load_level(current_level)
 
@@ -136,8 +149,17 @@ while True:
             pygame.quit()
             sys.exit()
 
+        if event.type == pygame.VIDEORESIZE:
+            SCREENSIZE = (event.w, event.h)
+            screen = pygame.display.set_mode(SCREENSIZE, flags=pygame.RESIZABLE, vsync=1)
+
         if event.type == pygame.MOUSEBUTTONDOWN:
             mx, my = event.pos
+
+            menu_button_rect, _, _ = get_menu_button_rect()
+            if event.button == 1 and menu_button_rect.collidepoint(event.pos):
+                go_to_menu()
+
             gx, gy = screen_to_grid(mx, my)
 
             if event.button == 1:
@@ -147,13 +169,16 @@ while True:
                 placed.pop((gx, gy), None)
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_1:
+            if event.key == pygame.K_ESCAPE:
+                go_to_menu()
+
+            elif event.key == pygame.K_1:
                 selected_tile = (selected_tile + 1) % len(tile_surfaces)
 
             elif event.key == pygame.K_s:
                 save_level()
 
-            elif event.key == pygame.K_EQUALS and pygame.KMOD_SHIFT:
+            elif event.key == pygame.K_EQUALS:
                 save_level()
                 current_level += 1
                 if current_level > MAX_LEVEL:
@@ -177,6 +202,9 @@ while True:
 
             elif event.key == pygame.K_e:
                 markers["end"] = list(screen_to_grid(*pygame.mouse.get_pos()))
+
+            elif event.key == pygame.K_c:
+                clear_level()
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
@@ -212,13 +240,16 @@ while True:
         "S: save",
         "B: begin",
         "E: einde",
+        "C: clear level",
         "Arrows: bewegen",
+        "ESC/Menu: terug naar main menu",
     ]
     for i, line in enumerate(controls):
         screen.blit(small_font.render(line, True, BLACK), (10, 100 + i * 30))
 
     draw_marker(markers["spawn"], RED)
     draw_marker(markers["end"], BLUE)
+    draw_menu_button()
 
     pygame.display.flip()
     clock.tick(FPS)
