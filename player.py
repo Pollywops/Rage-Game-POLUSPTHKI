@@ -71,7 +71,6 @@ class Player(pygame.sprite.Sprite):
         self.hooked = False
 
     def apply_rope_tens(self):
-
         self.rope_len = max(40, self.rope_len - 2)
 
         if not self.hooked:
@@ -139,8 +138,6 @@ class Player(pygame.sprite.Sprite):
                         self.pos.x = self.rect.centerx
                         self.velx = 0
 
-                gun.bullets = 2
-
         # Y-beweging
         old_rect = self.rect.copy()
         self.pos.y += self.vely
@@ -159,6 +156,7 @@ class Player(pygame.sprite.Sprite):
                         self.pos.y = self.rect.centery
                         self.vely = -abs(self.vely) * 0.9
                         self.touchingground = True
+                        gun.bullets = 2
                     elif old_rect.top >= sprite.rect.bottom and self.vely < 0:
                         self.rect.top = sprite.rect.bottom
                         self.pos.y = self.rect.centery
@@ -170,13 +168,12 @@ class Player(pygame.sprite.Sprite):
                         self.pos.y = self.rect.centery
                         self.vely = 0
                         self.touchingground = True
+                        gun.bullets = 2
                     elif self.vely < 0:
                         self.rect.top = sprite.rect.bottom
                         self.pos.y = self.rect.centery
                         self.vely = 0
                         self.touchingceiling = True
-
-                gun.bullets = 2
 
         if self.velx > 0:
             self.velx -= 0.03 * self.friction
@@ -189,6 +186,7 @@ class Player(pygame.sprite.Sprite):
 
         self.apply_rope_tens()
         self.rect.center = (round(self.pos.x), round(self.pos.y))
+
     def update(self, blocks, gun):
         self.physics(blocks, gun)
 
