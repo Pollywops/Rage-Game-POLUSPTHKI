@@ -27,14 +27,23 @@ GRAY = (128, 128, 128)
 def load_save():
     try:
         with open(SAVE_FILE, "r") as f:
-            data = json.load(f)
-        return {int(k): v for k, v in data.get("best_times", {}).items()}
+            data = json.load(f)  #Lees de opgeslagen data
+
+        best_times = data.get("best_times", {})  #Pak best_times uit de data
+        return {int(level): time for level, time in best_times.items()}  #Maak keys weer integers
+
     except (OSError, json.JSONDecodeError):
-        return {}
+        return {}  #Geef een lege dictionary terug als laden mislukt
+
 
 def save_best_times(best_times):
+    data = {
+        "best_times": {str(level): time for level, time in best_times.items()}
+        #Maak de keys strings zodat JSON ze goed opslaat
+    }
+
     with open(SAVE_FILE, "w") as f:
-        json.dump({"best_times": {str(k): v for k, v in best_times.items()}}, f)
+        json.dump(data, f)  #Slaat de data op in het bestand
 
 pygame.font.init()
 pygame.mixer.init()
@@ -44,6 +53,21 @@ font_menu = pygame.font.Font("Fonts/Pixeltype.ttf", 30)
 small_button_font = pygame.font.Font("Fonts/Pixeltype.ttf", 36)
 
 volume = 100
+
+fullscreen_text = font_klein.render("Fullscreen", True, (0,0,0))
+fullscreen_rect = fullscreen_text.get_rect(center=(400,450))
+
+hint3 = font_klein.render("Settings", True, (0, 0, 0))
+settings_rect = hint3.get_rect(topright=(770, 50))
+
+home = font_klein.render("Home", True, (0, 0, 0))
+homekonp_rect = home.get_rect(topleft=(30,50))
+
+plus_text = font_klein.render("+", True, (0, 0, 0))
+plus_rect = plus_text.get_rect()
+
+min_text = font_klein.render("-", True, (0, 0, 0))
+min_rect = min_text.get_rect()
 
 fullscreen = False
 show_speed = True
@@ -73,11 +97,12 @@ current_level_matrix = None
 menu_page = 0
 LEVELS_PER_PAGE = 10
 
-level_times = {}
-best_times = load_save()
-deaths = 0
-complete_time = ""
-complete_deaths = 0
+level_times = {}          #Bewaart tijden van levels tijdens het spelen
+best_times = load_save()  #Laadt de beste opgeslagen tijden
+deaths = 0                #Aantal deaths waar je mee start
+
+complete_time = ""        #Tijd waarmee een level is gehaalt
+complete_deaths = 0       #Aantal deaths wanneer je het level haalt
 
 screen = pygame.display.set_mode(SCREENSIZE, flags=pygame.RESIZABLE, vsync=1)
 clock = pygame.time.Clock()
@@ -220,11 +245,9 @@ def create_low_border():
 
 def reset_run_state(die):
     global deaths, huidig_level, active_hook
-
     gun.bullets = 2
     gun.bullet_type = "NORMAL"
     gun.super_shots_left = 0
-
     stopwatch.reset()
     start_level(huidig_level)
 
@@ -235,6 +258,7 @@ def reset_run_state(die):
     if die:
         deaths += 1
         cam.add_shake()
+    active_hook = None       #Verwijder een actieve hook
 
 def start_level(level_path):
     global end_rect
@@ -300,6 +324,7 @@ def tile_function_update():
                 reset_run_state(True)
 
 def draw_menu(screen):
+
     screen.fill((125, 190, 255))
 
     title = font_klein.render("Speed Shot", True, BLACK)
@@ -318,14 +343,9 @@ def draw_menu(screen):
     for button_index, level_index in enumerate(range(start_index, end_index)):
         x = screen.get_width() // 2 - button_w // 2
         y = start_y + button_index * 50
-
         rect = pygame.Rect(x, y, button_w, button_h)
 
-        if level_index == level_id:
-            pygame.draw.rect(screen, GREEN, rect)
-        else:
-            pygame.draw.rect(screen, WHITE, rect)
-
+        pygame.draw.rect(screen, GREEN if level_index == level_id else WHITE, rect)
         pygame.draw.rect(screen, BLACK, rect, 2)
 
         if level_index in best_times:
@@ -338,95 +358,12 @@ def draw_menu(screen):
     hint = font_menu.render("LEFT/RIGHT = page   UP/DOWN = level   ENTER = play", True, BLACK)
     screen.blit(hint, hint.get_rect(center=(screen.get_width() // 2, 740)))
 
-    settings_text, settings_text_rect, settings_knop = get_settings_button_rect()
-    draw_small_button(screen, settings_text, settings_text_rect, settings_knop)
+    # settings + editor knoppen
+    s_text, s_text_rect, s_button_rect = get_settings_button_rect()
+    draw_small_button(screen, s_text, s_text_rect, s_button_rect)
 
-    editor_text, editor_text_rect, editor_knop = get_editor_button_rect()
-    draw_small_button(screen, editor_text, editor_text_rect, editor_knop)
-
-TOGGLE_W = 300
-TOGGLE_H = 46
-KNOB_MARGE = 5
-SLIDER_W = 400
-SLIDER_H = 30
-
-def get_slider_rect(screen):
-    cx = screen.get_width() // 2
-    return pygame.Rect(cx - SLIDER_W // 2, 310, SLIDER_W, SLIDER_H)
-
-def draw_sliding_toggle(screen, cx, y, label, value):
-    lbl = font_menu.render(label, True, BLACK)
-    screen.blit(lbl, (cx - 260, y + (TOGGLE_H - lbl.get_height()) // 2))
-
-    track = pygame.Rect(cx + 10, y, TOGGLE_W, TOGGLE_H)
-    pygame.draw.rect(screen, WHITE, track)
-    pygame.draw.rect(screen, BLACK, track, 2)
-
-    knob_size = TOGGLE_H - KNOB_MARGE * 2
-    knob_x = track.right - KNOB_MARGE - knob_size if value else track.left + KNOB_MARGE
-    knob = pygame.Rect(knob_x, track.top + KNOB_MARGE, knob_size, knob_size)
-    pygame.draw.rect(screen, (180, 180, 180), knob)
-    pygame.draw.rect(screen, BLACK, knob, 2)
-
-    off_lbl = font_menu.render("OFF", True, BLACK)
-    on_lbl = font_menu.render("ON", True, BLACK)
-
-    midden_links = track.left + KNOB_MARGE + knob_size + (TOGGLE_W - knob_size - KNOB_MARGE * 2) // 4
-    midden_rechts = track.right - KNOB_MARGE - knob_size - (TOGGLE_W - knob_size - KNOB_MARGE * 2) // 4
-
-    screen.blit(off_lbl, off_lbl.get_rect(center=(midden_links, track.centery)))
-    screen.blit(on_lbl, on_lbl.get_rect(center=(midden_rechts, track.centery)))
-
-    return track
-
-def draw_settings(screen):
-    screen.fill((125, 190, 255))
-    cx = screen.get_width() // 2
-
-    title = font_klein.render("Settings", True, BLACK)
-    screen.blit(title, title.get_rect(center=(cx, 70)))
-
-    home_text, home_text_rect, home_knop = get_home_button_rect()
-    draw_small_button(screen, home_text, home_text_rect, home_knop)
-
-    slider = get_slider_rect(screen)
-    vol_lbl = font_menu.render(f"Volume: {volume}%", True, BLACK)
-    screen.blit(vol_lbl, vol_lbl.get_rect(midbottom=(slider.centerx, slider.top - 4)))
-
-    pygame.draw.rect(screen, WHITE, slider)
-    pygame.draw.rect(screen, BLACK, slider, 2)
-
-    fill_w = int(slider.width * volume / 100)
-    fill = pygame.Rect(slider.left, slider.top, fill_w, slider.height)
-    pygame.draw.rect(screen, (100, 160, 220), fill)
-
-    knob_x = max(slider.left, min(slider.left + fill_w - SLIDER_H // 2, slider.right - SLIDER_H))
-    knob = pygame.Rect(knob_x, slider.top, SLIDER_H, SLIDER_H)
-    pygame.draw.rect(screen, WHITE, knob)
-    pygame.draw.rect(screen, BLACK, knob, 2)
-
-    gap = 60
-    ty = 385
-    draw_sliding_toggle(screen, cx, ty, "Fullscreen", fullscreen)
-    draw_sliding_toggle(screen, cx, ty + gap, "Show Speed", show_speed)
-    draw_sliding_toggle(screen, cx, ty + gap * 2, "Show Deaths", show_deaths)
-
-    sep_y = ty + gap * 3 + 8
-    pygame.draw.line(screen, BLACK, (cx - 230, sep_y), (cx + 230, sep_y), 1)
-    ctrl_title = font_menu.render("Controls", True, BLACK)
-    screen.blit(ctrl_title, ctrl_title.get_rect(center=(cx, sep_y + 16)))
-
-    controls = [
-        ("Mouse click", "Shoot"),
-        ("H", "Hook"),
-        ("R", "Super bullet"),
-        ("T", "Reset"),
-        ("ESC", "Back to menu"),
-    ]
-    for i, (key, desc) in enumerate(controls):
-        ry = sep_y + 44 + i * 26
-        screen.blit(font_menu.render(key, True, BLACK), (cx - 180, ry))
-        screen.blit(font_menu.render(desc, True, BLACK), (cx + 20, ry))
+    e_text, e_text_rect, e_button_rect = get_editor_button_rect()
+    draw_small_button(screen, e_text, e_text_rect, e_button_rect)
 
 def toggle_fullscreen():
     global screen, fullscreen
@@ -438,7 +375,7 @@ def toggle_fullscreen():
     else:
         screen = pygame.display.set_mode(SCREENSIZE, pygame.RESIZABLE, vsync=1)
 
-def _parse_time(s):
+def time_to_seconds(s):
     try:
         m, rest = s.split(":")
         sec, ms = rest.split(".")
@@ -446,13 +383,15 @@ def _parse_time(s):
     except Exception:
         return float("inf")
 
+def _parse_time(s):
+    return time_to_seconds(s)
+
 def draw_level_complete(screen):
     overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, 160))
     screen.blit(overlay, (0, 0))
 
     cx = screen.get_width() // 2
-
     title = font_klein.render("Level Complete!", True, (255, 220, 50))
     screen.blit(title, title.get_rect(center=(cx, 200)))
 
@@ -474,11 +413,9 @@ bg_raw = pygame.image.load("textures/background.png").convert()
 
 def make_background(screen_size):
     sw, sh = screen_size
-
     scale = 1.35
     bw = int(sw * scale)
     bh = int(sh * scale)
-
     return pygame.transform.smoothscale(bg_raw, (bw, bh))
 
 def draw_background(screen, background, player):
@@ -560,30 +497,23 @@ class Button(pygame.sprite.Sprite):
 
     def draw(self):
         if not self.transparent:
-            screen.blit(self.image, [self.rect.topleft, self.rect.topleft])
+            screen.blit(self.image, self.rect.topleft)
         text_surface = self.font.render(self.text, True, BLACK)
-        screen.blit(text_surface, [self.rect.topleft[0] + self.fontoffsetX, self.rect.topleft[1]])
-
+        screen.blit(text_surface, [self.rect.topleft[0] + self.fontoffsetX, self.rect.topleft[1] + self.fontoffsetY])
 cam = Camera(SCREENSIZE)
-
+cam = Camera(SCREENSIZE)
 player_group.add(Player(500, 0, 50, 50, BLUE))
 player = player_group.sprite
-
 gun_group.add(Gun(10, 10))
 gun = gun_group.sprite
-
 button1 = Button(500, 50, 175, 30, True, GREEN, 30, 5, -3, "BULLETS:  " + str(gun.bullets))
 button2 = Button(500, 100, 175, 30, True, GREEN, 30, 5, -3, "BULLET TYPE: " + str(gun.bullet_type))
 button3 = Button(500, 150, 175, 30, True, GREEN, 30, 5, -3, "TIME: 00:00.00")
-
 buttons.add(button1, button2, button3)
-
 stopwatch = Stopwatch()
 stopwatch.start()
-
 start_music("menu")
 active_hook = None
-
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -616,7 +546,6 @@ while True:
                     button_w = 160
                     button_h = 40
                     start_y = 200
-
                     start_index = menu_page * LEVELS_PER_PAGE
                     end_index = min(start_index + LEVELS_PER_PAGE, len(level_files))
 
@@ -624,7 +553,6 @@ while True:
                         x = screen.get_width() // 2 - button_w // 2
                         y = start_y + button_index * 50
                         rect = pygame.Rect(x, y, button_w, button_h)
-
                         if rect.collidepoint(event.pos):
                             level_id = level_index
                             huidig_level = f"levels/{level_files[level_id]}"
@@ -696,13 +624,6 @@ while True:
                         player.derope()
                         active_hook = None
 
-        elif state == "level_complete":
-            if event.type == pygame.KEYDOWN:
-                if event.key in (pygame.K_RETURN, pygame.K_ESCAPE):
-                    state = "menu"
-                    deaths = 0
-                    start_music("menu")
-
         elif state == "settings":
             cx = screen.get_width() // 2
             gap = 60
@@ -711,7 +632,8 @@ while True:
             spd_rect = pygame.Rect(cx + 10, ty + gap, TOGGLE_W, TOGGLE_H)
             dth_rect = pygame.Rect(cx + 10, ty + gap * 2, TOGGLE_W, TOGGLE_H)
             slider = get_slider_rect(screen)
-            _, _, home_knop = get_home_button_rect()
+            home_knop = pygame.Rect(homekonp_rect.left - 6, homekonp_rect.top - 4,
+                                    homekonp_rect.width + 12, homekonp_rect.height + 8)
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if home_knop.collidepoint(event.pos):
@@ -723,19 +645,23 @@ while True:
                     show_speed = not show_speed
                 elif dth_rect.collidepoint(event.pos):
                     show_deaths = not show_deaths
-                elif pygame.Rect(slider.left, slider.top - 6, slider.width, slider.height + 12).collidepoint(event.pos):
-                    slider_dragging = True
-                    volume = max(0, min(100, int((event.pos[0] - slider.left) / slider.width * 100)))
-                    pygame.mixer.music.set_volume(volume / 100)
+                else:
+                    slider_hitbox = pygame.Rect(slider.left, slider.top - 6, slider.width, slider.height + 12)
+                    if slider_hitbox.collidepoint(event.pos):
+                        slider_dragging = True
+                        volume = int((event.pos[0] - slider.left) / slider.width * 100)
+                        volume = max(0, min(100, volume))
+                        pygame.mixer.music.set_volume(volume / 100)
 
-            if event.type == pygame.MOUSEBUTTONUP:
+            elif event.type == pygame.MOUSEBUTTONUP:
                 slider_dragging = False
 
-            if event.type == pygame.MOUSEMOTION and slider_dragging:
-                volume = max(0, min(100, int((event.pos[0] - slider.left) / slider.width * 100)))
+            elif event.type == pygame.MOUSEMOTION and slider_dragging:
+                volume = int((event.pos[0] - slider.left) / slider.width * 100)
+                volume = max(0, min(100, volume))
                 pygame.mixer.music.set_volume(volume / 100)
 
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 state = "menu"
 
     if state == "menu":
@@ -747,7 +673,6 @@ while True:
             pygame.mixer.music.play(-1)
 
         draw_background(screen, background, player)
-
         cam.update_center(player.rect)
         player.update(blocks, gun)
 
@@ -775,7 +700,6 @@ while True:
 
         vel_x = player.velx
         vel_y = player.vely
-
         speed = math.hypot(vel_x, vel_y)
         if speed < 1:
             speed = 0
