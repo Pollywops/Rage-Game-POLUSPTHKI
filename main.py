@@ -8,50 +8,83 @@ from gun import Gun
 from hook import HProjectile as hook
 import os
 
-SAVE_FILE = "save_data.json"
+Save_file = "save_data.json"
 
 def load_save():
     try:
-        with open(SAVE_FILE, "r") as f:
-            data = json.load(f)
-        return {int(k): v for k, v in data.get("best_times", {}).items()}
-    except (OSError, json.JSONDecodeError):
+        # open het save bestand om te lezen
+        f = open(Save_file, "r")
+
+        # laad de data uit het JSON bestand
+        data = json.load(f)
+
+        # sluit het bestand
+        f.close()
+
+        best_times = {}
+
+        # ga door alle opgeslagen tijden
+        for key in data["best_times"]:
+            # zet de key weer om naar een integer
+            best_times[int(key)] = data["best_times"][key]
+
+        # geef de tijden terug
+        return best_times
+
+    except:
+        # als het bestand niet bestaat of kapot is, geef lege data terug
         return {}
 
+
 def save_best_times(best_times):
-    with open(SAVE_FILE, "w") as f:
-        json.dump({"best_times": {str(k): v for k, v in best_times.items()}}, f)
+    # maak een lege dictionary voor het opslaan
+    data = {"best_times": {}}
+
+    # ga door alle tijden
+    for key in best_times:
+        # JSON kan geen integer keys opslaan, dus maak er een string van
+        data["best_times"][str(key)] = best_times[key]
+
+    # open het save bestand om te schrijven
+    f = open(Save_file, "w")
+
+    # sla de data op in JSON formaat
+    json.dump(data, f)
+
+    # sluit het bestand
+    f.close()
 
 pygame.font.init()
 pygame.mixer.init()
 
+#fonts
 font_klein = pygame.font.Font('Fonts/Pixeltype.ttf', 50)
 font_menu = pygame.font.Font('Fonts/Pixeltype.ttf', 30)
 
 fontArial = pygame.font.SysFont("Arial", 72)
 
+#start volume
 volume = 100
 
+#Fullscreen positie en Fullscreen tekst
 fullscreen_text = font_klein.render("Fullscreen", True, (0,0,0))
 fullscreen_rect = fullscreen_text.get_rect(center=(400,450))
 
+#Settings positie en Settings tekst
 hint3 = font_klein.render("Settings", True, (0, 0, 0))
 settings_rect = hint3.get_rect(topright=(770, 50))
 
+#Home knop positie en Home tekst
 home = font_klein.render("Home", True, (0, 0, 0))
-homekonp_rect = home.get_rect(topleft=(30,50))
+homeknop_rect = home.get_rect(topleft=(30,50))
 
-plus_text = font_klein.render("+", True, (0, 0, 0))
-plus_rect = plus_text.get_rect()
-
-min_text = font_klein.render("-", True, (0, 0, 0))
-min_rect = min_text.get_rect()
-
+#Start settings
 fullscreen = False
 show_speed = True
 show_deaths = True
 slider_dragging = False
 
+#Muziek
 pygame.mixer.set_num_channels(40)
 menu_intro = ("sounds/main_menu_intro.ogg")
 menu_loop = "sounds/main_menu_loop.ogg"
@@ -63,10 +96,12 @@ lvl_switch = pygame.mixer.Sound("sounds/Switch1.wav")
 page_switch = pygame.mixer.Sound("sounds/Page_turn.wav")
 page_not_found = pygame.mixer.Sound("sounds/error_sound2.mp3")
 
+
 SCREENSIZE = [800,800]
 EMPTY = 0
 FPS = 60
 pygame.font.get_fonts()
+#Start state
 state = "menu"
 
 level_files = [f"level{i}.json" for i in range(1, 21)]
@@ -216,9 +251,13 @@ def reset_run_state(die):
     stopwatch.reset()
     start_level(huidig_level)
     player.reset_position()
+
     if die:
+        #Telt aantal keer dood op
         deaths += 1
+        #Trilt camera
         cam.add_shake()
+    #Hook wordt verwijderd
     active_hook = None
 
 def start_level(level_path):
@@ -288,6 +327,7 @@ def tile_function_update():
 
 def draw_menu(screen):
 
+    # achtergrond kleur
     screen.fill((125, 190, 255))
 
     title = font_klein.render("Rage Game", True, (0, 0, 0))
@@ -316,9 +356,12 @@ def draw_menu(screen):
 
         pygame.draw.rect(screen, BLACK, rect, 2)
 
+        # kijk of dit level al een opgeslagen beste tijd heeft
         if level_index in best_times:
+            # maak tekst met het level nummer en de beste tijd
             text = font_menu.render(f"{level_index + 1}  {best_times[level_index]}", True, BLACK)
         else:
+            # als er geen tijd is opgeslagen, laat alleen het level nummer zien
             text = font_menu.render(str(level_index + 1), True, BLACK)
 
 
@@ -327,17 +370,16 @@ def draw_menu(screen):
     hint = font_menu.render("LEFT/RIGHT = page   UP/DOWN = level   ENTER = play", True, BLACK)
     screen.blit(hint, hint.get_rect(center=(screen.get_width() // 2, 740)))
 
-    # instellingen knop rechts bovenaan, ziet eruit als een level-knop
-    settings_knop = pygame.Rect(settings_rect.left - 6, settings_rect.top - 4,
-                                settings_rect.width + 12, settings_rect.height + 8)
+    #Instellingen knop rechts bovenaan
+    settings_knop = pygame.Rect(settings_rect.left - 6, settings_rect.top - 4,settings_rect.width + 12, settings_rect.height + 8)
     pygame.draw.rect(screen, WHITE, settings_knop)
     pygame.draw.rect(screen, BLACK, settings_knop, 2)
     screen.blit(hint3, settings_rect)
 
-# breedte en hoogte van de toggles en de volumebalk
+#Breedte en hoogte van de toggles en de volumebalk
 TOGGLE_W = 300
 TOGGLE_H = 46
-KNOB_MARGE = 5       # ruimte tussen de rand en het schuifblokje
+KNOB_MARGE = 5
 SLIDER_W = 400
 SLIDER_H = 30
 
@@ -345,7 +387,7 @@ def get_slider_rect(screen):
     cx = screen.get_width() // 2
     return pygame.Rect(cx - SLIDER_W // 2, 310, SLIDER_W, SLIDER_H)
 
-# tekent een knop die eruitziet als de level-knoppen in het menu
+#Tekent een knop die eruitziet als de level-knoppen in het menu
 def teken_menu_knop(screen, rect, tekst, geselecteerd=False):
     kleur = GREEN if geselecteerd else WHITE
     pygame.draw.rect(screen, kleur, rect)
@@ -353,24 +395,24 @@ def teken_menu_knop(screen, rect, tekst, geselecteerd=False):
     lbl = font_menu.render(tekst, True, BLACK)
     screen.blit(lbl, lbl.get_rect(center=rect.center))
 
-# tekent een toggle met een schuifblokje, links=uit rechts=aan
+#Tekent een toggle met een schuifblokje
 def draw_sliding_toggle(screen, cx, y, label, value):
     lbl = font_menu.render(label, True, BLACK)
     screen.blit(lbl, (cx - 260, y + (TOGGLE_H - lbl.get_height()) // 2))
 
-    # buitenste balk
+    #Buitenste balk
     track = pygame.Rect(cx + 10, y, TOGGLE_W, TOGGLE_H)
     pygame.draw.rect(screen, WHITE, track)
     pygame.draw.rect(screen, BLACK, track, 2)
 
-    # vierkant blokje dat schuift
+    #Vierkant blokje dat schuift
     knob_size = TOGGLE_H - KNOB_MARGE * 2
     knob_x = track.right - KNOB_MARGE - knob_size if value else track.left + KNOB_MARGE
     knob = pygame.Rect(knob_x, track.top + KNOB_MARGE, knob_size, knob_size)
     pygame.draw.rect(screen, (180, 180, 180), knob)
     pygame.draw.rect(screen, BLACK, knob, 2)
 
-    # on/off tekst in de balk
+    #On en off tekst in de balk
     off_lbl = font_menu.render("OFF", True, BLACK)
     on_lbl  = font_menu.render("ON",  True, BLACK)
     midden_links  = track.left  + KNOB_MARGE + knob_size + (TOGGLE_W - knob_size - KNOB_MARGE * 2) // 4
@@ -388,9 +430,9 @@ def draw_settings(screen):
     title = font_klein.render("Settings", True, BLACK)
     screen.blit(title, title.get_rect(center=(cx, 70)))
 
-    # home knop ziet eruit als een level-knop
-    home_knop = pygame.Rect(homekonp_rect.left - 6, homekonp_rect.top - 4,
-                            homekonp_rect.width + 12, homekonp_rect.height + 8)
+    # home knop
+    home_knop = pygame.Rect(homeknop_rect.left - 6, homeknop_rect.top - 4,
+                            homeknop_rect.width + 12, homeknop_rect.height + 8)
     teken_menu_knop(screen, home_knop, "Home")
 
     # volumelabel vlak boven de balk
@@ -744,8 +786,8 @@ while True:
             spd_rect = pygame.Rect(cx + 10, ty + gap,    TOGGLE_W, TOGGLE_H)
             dth_rect = pygame.Rect(cx + 10, ty + gap * 2,TOGGLE_W, TOGGLE_H)
             slider   = get_slider_rect(screen)
-            home_knop = pygame.Rect(homekonp_rect.left - 6, homekonp_rect.top - 4,
-                                    homekonp_rect.width + 12, homekonp_rect.height + 8)
+            home_knop = pygame.Rect(homeknop_rect.left - 6, homeknop_rect.top - 4,
+                                    homeknop_rect.width + 12, homeknop_rect.height + 8)
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if home_knop.collidepoint(event.pos):
