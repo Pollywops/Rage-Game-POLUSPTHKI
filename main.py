@@ -23,7 +23,7 @@ WHITE = (200, 200, 200)
 BLACK = (30, 30, 30)
 GRAY = (128, 128, 128)
 ##############################
-##test
+##test67
 def load_save():
     try:
         with open(SAVE_FILE, "r") as f:
