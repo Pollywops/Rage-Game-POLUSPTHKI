@@ -801,38 +801,46 @@ while True:
     if state == "menu":
         draw_menu(screen)
 
+
     elif state == "game":
+
         if not pygame.mixer.music.get_busy():
             pygame.mixer.music.load(current_loop)
-            pygame.mixer.music.play(-1)
+            pygame.mixer.music.play(-1)  #Start de muziek opnieuw als die niet speelt
 
-        draw_background(screen, background, player)
+        draw_background(screen, background, player)  #Teken de achtergrond
+        cam.update_center(player.rect)  #Laat de camera de speler volgen
+        player.update(blocks, gun)  #Update speler beweging en acties
 
-        cam.update_center(player.rect)
-        player.update(blocks, gun)
         if player.rect.bottom > lowest + 300:
-            reset_run_state(True)
+            reset_run_state(True)  #Reset als de speler van de map valt
+
         tile_function_update()
+
         if end_rect and player.rect.colliderect(end_rect):
-            complete_time = stopwatch.get_formatted_time()
-            complete_deaths = deaths
-            level_times[level_id] = complete_time
+            complete_time = stopwatch.get_formatted_time()  #Sla eindtijd op
+            complete_deaths = deaths  #Sla deaths op
+            level_times[level_id] = complete_time  #Bewaar tijd van dit level
+
             if level_id not in best_times or stopwatch.get_time() < time_to_seconds(best_times[level_id]):
-                best_times[level_id] = complete_time
+                best_times[level_id] = complete_time  #Nieuwe beste tijd opslaan
                 save_best_times(best_times)
-            state = "level_complete"
-        gun.update(player, cam)
+
+            state = "level_complete"  #Ga naar level complete scherm
+
+        gun.update(player, cam)  #Update het wapen
+
         if active_hook:
-            active_hook.update(blocks, player, cam, screen)
-            active_hook.draw(screen, cam)
+            active_hook.update(blocks, player, cam, screen)  #Update actieve hook
+            active_hook.draw(screen, cam)  #Teken actieve hook
 
         vel_x = player.velx
         vel_y = player.vely
 
-        speed = math.hypot(vel_x, vel_y)  # absolute snelheid
+        speed = math.hypot(vel_x, vel_y)  #Absolute snelheid
         if speed < 1:
             speed = 0
-        speed_pixels = round(speed, 2)  # optioneel afronden
+        speed_pixels = round(speed, 2)  #Optioneel afronden
 
         if show_deaths: #Laat aantal deaths zien
             death_text = font_klein.render(f"Deaths: {deaths}", True, (200, 50, 50))
