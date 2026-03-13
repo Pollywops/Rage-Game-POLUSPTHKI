@@ -30,10 +30,10 @@ class Camera:
         if self.shake_frames > 0:
             sx = random.randint(-self.shake_intensity, self.shake_intensity)
             sy = random.randint(-self.shake_intensity, self.shake_intensity)
-            #Geeft een random verschuiving voor de shake
+            #Geeft een willekeurige verschuiving voor shake-effect
 
         return rect.move(-self.offset.x + sx, -self.offset.y + sy)
-        #Zet een wereld rect om naar schermpositie
+        #Zet een werel rect om naar schermpositie
 
     def apply_mouse(self):
         #Zet de muispositie om naar wereldpositie
