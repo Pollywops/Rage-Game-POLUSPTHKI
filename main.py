@@ -23,17 +23,15 @@ WHITE = (200, 200, 200)
 BLACK = (30, 30, 30)
 GRAY = (128, 128, 128)
 
-
 def load_save():
-    try:
-        with open(SAVE_FILE, "r") as f:
-            data = json.load(f)  #Lees de opgeslagen data"""
 
-        best_times = data.get("best_times", {})  #Pak best_times uit de data"""
-        return {int(level): time for level, time in best_times.items()}  #Maak keys weer integers"""
+    file = open(SAVE_FILE, "r")
+    data =json.load(file)  #Lees de opgeslagen data"""
+    file.close()
 
-    except (OSError, json.JSONDecodeError):
-        return {}  #Geef een lege dictionary terug als laden mislukt"""
+    best_times = data.get("best_times", {})  #Pak best_times uit de data"""
+    return {int(level): time for level, time in best_times.items()}  #Maak keys weer integers"""
+
 
 
 def save_best_times(best_times):
@@ -42,8 +40,9 @@ def save_best_times(best_times):
         #Maak de keys strings zodat JSON ze goed opslaat"""
     }
 
-    with open(SAVE_FILE, "w") as f:
-        json.dump(data, f)  #Slaat de data op in het bestand"""
+    file =  open(SAVE_FILE, "w")
+    json.dump(data, f)  #Slaat de data op in het bestand"""
+    file.close()
 
 pygame.font.init()
 pygame.mixer.init()
@@ -292,33 +291,6 @@ def start_level(level_path):
         end_rect = None
 
 
-def get_tile_info_at_world(x, y):
-    if not current_level_matrix:
-        return None
-
-    gx = int(x // grid_size)
-    gy = int(y // grid_size)
-
-    if gy < 0 or gy >= len(current_level_matrix):
-        return None
-
-    row = current_level_matrix[gy]
-    if gx < 0 or gx >= len(row):
-        return None
-
-    try:
-        raw = int(row[gx])
-    except (TypeError, ValueError):
-        return None
-
-    if raw == EMPTY:
-        return None
-
-    tile_id = raw - 1
-    if tile_id < 0 or tile_id >= len(tile_dicts):
-        return None
-
-    return tile_dicts[tile_id]
 
 def tile_function_update():
     for tile in blocks:
