@@ -1,7 +1,20 @@
 import pygame
 
 class Player(pygame.sprite.Sprite):
+    """
+    Deze class maakt de speler aan.
+
+    De speler heeft een afbeelding, hitbox, snelheid, physics en kan ook
+    aan een hook/touw vastzitten.
+    """
+
     def __init__(self, x, y, w, h, color):
+        """
+        Maakt de speler aan op een beginpositie.
+
+        Laadt de afbeelding, maakt de hitbox, zet de startpositie en maakt
+        alle beginwaardes aan voor snelheid, botsingen, hook en wrijving.
+        """
         super().__init__()
         self.realimage = pygame.image.load('textures/Pot.png').convert_alpha()
         self.originalimage = pygame.transform.scale(self.realimage, (32, 32))
@@ -29,10 +42,16 @@ class Player(pygame.sprite.Sprite):
         self.friction = 1
 
     def add_vel(self, x, y):
+        """
+        Voegt snelheid toe aan de speler.
+        """
         self.velx += x
         self.vely += y
 
     def fix_colx(self, blocks):
+        """
+        Beweegt de speler op de x-as en stopt botsingen links en rechts.
+        """
         self.pos.x += self.velx
         self.rect.centerx = round(self.pos.x)
 
@@ -48,6 +67,9 @@ class Player(pygame.sprite.Sprite):
                     self.velx = 0
 
     def fix_coly(self, blocks):
+        """
+        Beweegt de speler op de y-as en stopt botsingen met vloer en plafond.
+        """
         self.pos.y += self.vely
         self.rect.centery = round(self.pos.y)
 
@@ -63,14 +85,29 @@ class Player(pygame.sprite.Sprite):
                     self.vely = 0
 
     def rope(self, anchor_pos):
+        """
+        Zet de speler vast aan een hookpunt.
+
+        Zet het punt waar de hook vastzit en berekent de lengte van het touw.
+        """
         self.hooked = True
         self.anchor.update(anchor_pos)
         self.rope_len = (self.pos - self.anchor).length()
 
     def derope(self):
+        """
+        Haalt de speler van het touw af.
+        """
         self.hooked = False
 
     def apply_rope_tens(self):
+        """
+        Past de spanning van het touw toe.
+
+        Het touw wordt langzaam korter. Als de speler verder weg is dan de
+        touwlengte, wordt hij teruggezet op de cirkel van het touw en wordt
+        snelheid in de richting van het touw weggehaald.
+        """
         self.rope_len = max(40, self.rope_len - 2)
 
         if not self.hooked:
@@ -85,22 +122,25 @@ class Player(pygame.sprite.Sprite):
         if dist > self.rope_len:
             norm = d / dist
 
-            # zet speler exact terug op de touwcirkel
             self.pos = self.anchor + norm * self.rope_len
 
-            # haal snelheid weg in de richting van het touw
             v_radial = self.velx * norm.x + self.vely * norm.y
             if v_radial > 0:
                 self.velx -= v_radial * norm.x
                 self.vely -= v_radial * norm.y
 
-            # klein beetje demping tegen energie-opbouw
             self.velx *= 0.995
             self.vely *= 0.995
 
             self.rect.center = (round(self.pos.x), round(self.pos.y))
 
     def physics(self, blocks, gun):
+        """
+        Voert alle physics van de speler uit.
+
+        Doet zwaartekracht, botsingen, bouncy blocks, friction, kogels resetten
+        bij landen en de spanning van het touw.
+        """
         self.touchingground = False
         self.touchingceiling = False
         self.friction = 1
@@ -188,12 +228,23 @@ class Player(pygame.sprite.Sprite):
         self.rect.center = (round(self.pos.x), round(self.pos.y))
 
     def update(self, blocks, gun):
+        """
+        Voert de physics van de speler uit.
+        """
         self.physics(blocks, gun)
 
     def draw(self, screen, cam):
+        """
+        Tekent de speler op het scherm.
+        """
         screen.blit(self.image, cam.apply_rect(self.rect))
 
     def reset_position(self):
+        """
+        Zet de speler terug naar de startpositie.
+
+        Reset ook de hook en de snelheid.
+        """
         self.pos.x = self.start_pos[0]
         self.pos.y = self.start_pos[1]
         self.rect.center = self.start_pos
