@@ -458,8 +458,7 @@ def draw_settings(screen):
     controls = [
         ("Mouse click", "Shoot"),
         ("H", "Hook"),
-        ("R", "Super bullet"),
-        ("T", "Reset"),
+        ("R", "Reset"),
         ("ESC", "Back to menu"),
     ]
     for i, (key, desc) in enumerate(controls):
@@ -775,7 +774,7 @@ while True:
                 if event.key == pygame.K_ESCAPE:
                     state = "menu"
                     start_music("menu")
-                elif event.key == pygame.K_t:
+                elif event.key == pygame.K_r:
                     reset_run_state(False)
                     lowest = create_low_border()
                     reset_run_state(False)
