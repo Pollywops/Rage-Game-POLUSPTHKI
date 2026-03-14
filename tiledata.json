@@ -1,0 +1,12 @@
+{
+  "tiles": [
+    { "name": "aarde", "file": "Meteoriet_Blok.jpg", "solid": true },
+    { "name": "gras", "file": "Gras_Top.png", "solid": true },
+    { "name": "spike", "file": "spike.png", "solid": true, "spike": true},
+    {"name":  "bouncy", "file":  "bouncy.png", "solid":  true, "bouncy":  true, "glide" : true},
+    {"name":  "super_bullet", "file":  "super_pellet2.png", "solid": false, "super_pickup": true},
+    {"name":  "ice_block", "file": "ice_block.png", "solid": false, "glide":  true},
+    {"name":  "gras_hoek_links", "file": "Gras_Hoek_Links.png", "solid": true},
+    {"name":  "gras_hoek_rechts", "file": "Gras_Hoek_Rechts.png", "solid": true}
+  ]
+}
