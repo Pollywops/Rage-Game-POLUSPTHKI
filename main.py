@@ -750,8 +750,26 @@ while True:
         """Game input"""
         if state == "game":
             if event.type == pygame.MOUSEBUTTONDOWN:
-                gun.shoot(player)
-                stopwatch.start()
+                if event.button == 1:  # linkermuisknop = schieten
+                    gun.shoot(player)
+                    stopwatch.start()
+
+                elif event.button == 3:  # rechtermuisknop = hook starten
+                    if not active_hook:
+                        active_hook = hook(
+                            player.rect.centerx,
+                            player.rect.centery,
+                            10,
+                            10,
+                            gun.angle,
+                            30
+                        )
+                        stopwatch.start()
+
+            if event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 3:  # rechtermuisknop los = hook stoppen
+                    player.derope()
+                    active_hook = None
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -761,12 +779,6 @@ while True:
                     reset_run_state(False)
                     lowest = create_low_border()
                     reset_run_state(False)
-                elif event.key == pygame.K_h:
-                    if not active_hook:
-                        active_hook = hook(player.rect.centerx, player.rect.centery, 10, 10, gun.angle, 30)
-                    else:
-                        player.derope()
-                        active_hook = None
 
         elif state == "level_complete":
             if event.type == pygame.KEYDOWN:
