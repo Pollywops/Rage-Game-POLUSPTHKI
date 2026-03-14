@@ -10,8 +10,8 @@ import os
 import subprocess
 
 SAVE_FILE = "save_data.json"
+#brr brr patapim (easter egg)
 
-########## COLORS ##############
 RED = (255, 0, 0)
 GREEN = (0, 177, 64)
 BLUE = (30, 144, 255)
@@ -22,28 +22,28 @@ AQUA = (0, 103, 127)
 WHITE = (200, 200, 200)
 BLACK = (30, 30, 30)
 GRAY = (128, 128, 128)
-##############################
+
 
 def load_save():
     try:
         with open(SAVE_FILE, "r") as f:
-            data = json.load(f)  #Lees de opgeslagen data
+            data = json.load(f)  #Lees de opgeslagen data"""
 
-        best_times = data.get("best_times", {})  #Pak best_times uit de data
-        return {int(level): time for level, time in best_times.items()}  #Maak keys weer integers
+        best_times = data.get("best_times", {})  #Pak best_times uit de data"""
+        return {int(level): time for level, time in best_times.items()}  #Maak keys weer integers"""
 
     except (OSError, json.JSONDecodeError):
-        return {}  #Geef een lege dictionary terug als laden mislukt
+        return {}  #Geef een lege dictionary terug als laden mislukt"""
 
 
 def save_best_times(best_times):
     data = {
         "best_times": {str(level): time for level, time in best_times.items()}
-        #Maak de keys strings zodat JSON ze goed opslaat
+        #Maak de keys strings zodat JSON ze goed opslaat"""
     }
 
     with open(SAVE_FILE, "w") as f:
-        json.dump(data, f)  #Slaat de data op in het bestand
+        json.dump(data, f)  #Slaat de data op in het bestand"""
 
 pygame.font.init()
 pygame.mixer.init()
@@ -61,7 +61,7 @@ hint3 = font_klein.render("Settings", True, (0, 0, 0))
 settings_rect = hint3.get_rect(topright=(770, 50))
 
 home = font_klein.render("Home", True, (0, 0, 0))
-homekonp_rect = home.get_rect(topleft=(30,50))
+homeknop_rect= home.get_rect(topleft=(30, 50))
 
 plus_text = font_klein.render("+", True, (0, 0, 0))
 plus_rect = plus_text.get_rect()
@@ -97,25 +97,26 @@ current_level_matrix = None
 menu_page = 0
 LEVELS_PER_PAGE = 10
 
-level_times = {}          #Bewaart tijden van levels tijdens het spelen
-best_times = load_save()  #Laadt de beste opgeslagen tijden
-deaths = 0                #Aantal deaths waar je mee start
+level_times = {}          #Bewaart tijden van levels tijdens het spelen"""
+best_times = load_save()  #Laadt de beste opgeslagen tijden"""
+deaths = 0                #Aantal deaths waar je mee start"""
 
-complete_time = ""        #Tijd waarmee een level is gehaalt
-complete_deaths = 0       #Aantal deaths wanneer je het level haalt
+complete_time = ""        #Tijd waarmee een level is gehaalt"""
+complete_deaths = 0       #Aantal deaths wanneer je het level haalt"""
 
 screen = pygame.display.set_mode(SCREENSIZE, flags=pygame.RESIZABLE, vsync=1)
 clock = pygame.time.Clock()
 player_group = pygame.sprite.GroupSingle()
 gun_group = pygame.sprite.GroupSingle()
 blocks = pygame.sprite.Group()
-update_texts = pygame.sprite.Group()
+texts = pygame.sprite.Group()
 
 grid_size = 32
 lowest = 0
 
-with open("tiledata.json", "r", encoding="utf-8") as file:
-    tiledata = json.load(file)
+file = open("tiledata.json", "r")
+tiledata = json.load(file)
+file.close()
 
 tile_dicts = tiledata["tiles"]
 tile_surfaces = []
@@ -186,20 +187,24 @@ def start_music(state_name):
     pygame.mixer.music.play()
     pygame.mixer.music.queue(loop)
 
-def krijg_info(data, key):
-    marker = data.get(key)
-    if marker is None:
-        return None
+
+def krijg_info(data, type):
+    marker = data.get(type)
     return int(marker[0]), int(marker[1])
 
 def start_level_editor():
-    pygame.quit()
-    subprocess.Popen([sys.executable, "lvleditor.py"])
-    sys.exit()
+    leveleditor = subprocess.Popen([sys.executable, "lvleditor.py"])
+    time.sleep(1)
+    if leveleditor.poll() == None:
+        pygame.quit()
+        sys.exit()
+
+
 
 def load_level(path):
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    f = open(path, "r", encoding="utf-8")
+    data = json.load(f)
+    f.close()
 
     matrix = data.get("level")
     spawn = krijg_info(data, "spawn")
@@ -245,20 +250,22 @@ def create_low_border():
 
 def reset_run_state(die):
     global deaths, huidig_level, active_hook
+
     gun.bullets = 2
     gun.bullet_type = "NORMAL"
     gun.super_shots_left = 0
+
     stopwatch.reset()
     start_level(huidig_level)
 
     player.reset_position()
-    player.derope()
-    active_hook = None
+    player.derope()      #Stop rope physics"""
+    active_hook = None   #Delete the hook projectile"""
 
     if die:
         deaths += 1
         cam.add_shake()
-    active_hook = None       #Verwijder een actieve hook
+    active_hook = None       #Verwijder een actieve hook"""
 
 def start_level(level_path):
     global end_rect
@@ -283,6 +290,7 @@ def start_level(level_path):
         )
     else:
         end_rect = None
+
 
 def get_tile_info_at_world(x, y):
     if not current_level_matrix:
@@ -325,6 +333,7 @@ def tile_function_update():
 
 def draw_menu(screen):
 
+    """Achtergrond kleur"""
     screen.fill((125, 190, 255))
 
     title = font_klein.render("Speed Shot", True, BLACK)
@@ -358,22 +367,119 @@ def draw_menu(screen):
     hint = font_menu.render("LEFT/RIGHT = page   UP/DOWN = level   ENTER = play", True, BLACK)
     screen.blit(hint, hint.get_rect(center=(screen.get_width() // 2, 740)))
 
-    # settings + editor knoppen
-    s_text, s_text_rect, s_button_rect = get_settings_button_rect()
-    draw_small_button(screen, s_text, s_text_rect, s_button_rect)
+    settings_text, settings_text_rect, settings_knop = get_settings_button_rect()
+    draw_small_button(screen, settings_text, settings_text_rect, settings_knop)
 
-    e_text, e_text_rect, e_button_rect = get_editor_button_rect()
-    draw_small_button(screen, e_text, e_text_rect, e_button_rect)
+    editor_text, editor_text_rect, editor_knop = get_editor_button_rect()
+    draw_small_button(screen, editor_text, editor_text_rect, editor_knop)
+
+TOGGLE_W = 300
+TOGGLE_H = 46
+KNOB_MARGE = 5
+SLIDER_W = 400
+SLIDER_H = 30
+
+def get_slider_rect(screen):
+    cx = screen.get_width() // 2
+    return pygame.Rect(cx - SLIDER_W // 2, 310, SLIDER_W, SLIDER_H)
+
+def draw_sliding_toggle(screen, cx, y, label, value):
+    lbl = font_menu.render(label, True, BLACK)
+    screen.blit(lbl, (cx - 260, y + (TOGGLE_H - lbl.get_height()) // 2))
+
+    """Buitenste balk"""
+    track = pygame.Rect(cx + 10, y, TOGGLE_W, TOGGLE_H)
+    pygame.draw.rect(screen, WHITE, track)
+    pygame.draw.rect(screen, BLACK, track, 2)
+
+    """Vierkant blokje dat schuift"""
+    knob_size = TOGGLE_H - KNOB_MARGE * 2
+    knob_x = track.right - KNOB_MARGE - knob_size if value else track.left + KNOB_MARGE
+    knob = pygame.Rect(knob_x, track.top + KNOB_MARGE, knob_size, knob_size)
+    pygame.draw.rect(screen, (180, 180, 180), knob)
+    pygame.draw.rect(screen, BLACK, knob, 2)
+
+    """On en off tekst in de balk"""
+    off_lbl = font_menu.render("OFF", True, BLACK)
+    on_lbl = font_menu.render("ON", True, BLACK)
+
+    midden_links = track.left + KNOB_MARGE + knob_size + (TOGGLE_W - knob_size - KNOB_MARGE * 2) // 4
+    midden_rechts = track.right - KNOB_MARGE - knob_size - (TOGGLE_W - knob_size - KNOB_MARGE * 2) // 4
+
+    screen.blit(off_lbl, off_lbl.get_rect(center=(midden_links, track.centery)))
+    screen.blit(on_lbl, on_lbl.get_rect(center=(midden_rechts, track.centery)))
+
+    return track
+
+def draw_settings(screen):
+    screen.fill((125, 190, 255))
+    cx = screen.get_width() // 2
+
+    """Titel bovenaan het scherm"""
+    title = font_klein.render("Settings", True, BLACK)
+    screen.blit(title, title.get_rect(center=(cx, 70)))
+
+    home_text, home_text_rect, home_knop = get_home_button_rect()
+    draw_small_button(screen, home_text, home_text_rect, home_knop)
+
+    """Volumelabel vlak boven de balk"""
+    slider = get_slider_rect(screen)
+    vol_lbl = font_menu.render(f"Volume: {volume}%", True, BLACK)
+    screen.blit(vol_lbl, vol_lbl.get_rect(midbottom=(slider.centerx, slider.top - 4)))
+
+    """Volumebalk achtergrond"""
+    pygame.draw.rect(screen, WHITE, slider)
+    pygame.draw.rect(screen, BLACK, slider, 2)
+
+    """Gevuld deel van de balk"""
+    fill_w = int(slider.width * volume / 100)
+    fill = pygame.Rect(slider.left, slider.top, fill_w, slider.height)
+    pygame.draw.rect(screen, (100, 160, 220), fill)
+
+    """Vierkant schuifblokje op de volumebalk"""
+    knob_x = max(slider.left, min(slider.left + fill_w - SLIDER_H // 2, slider.right - SLIDER_H))
+    knob = pygame.Rect(knob_x, slider.top, SLIDER_H, SLIDER_H)
+    pygame.draw.rect(screen, WHITE, knob)
+    pygame.draw.rect(screen, BLACK, knob, 2)
+
+    """De drie toggles voor de opties"""
+    gap = 60
+    ty = 385
+    draw_sliding_toggle(screen, cx, ty, "Fullscreen", fullscreen)
+    draw_sliding_toggle(screen, cx, ty + gap, "Show Speed", show_speed)
+    draw_sliding_toggle(screen, cx, ty + gap * 2, "Show Deaths", show_deaths)
+
+    """Controls tekst"""
+    sep_y = ty + gap * 3 + 8
+    ctrl_title = font_menu.render("Controls", True, BLACK)
+    screen.blit(ctrl_title, ctrl_title.get_rect(center=(cx, sep_y + 16)))
+
+    """Lijst met toetsen en wat ze doen"""
+    controls = [
+        ("Mouse click", "Shoot"),
+        ("H", "Hook"),
+        ("R", "Super bullet"),
+        ("T", "Reset"),
+        ("ESC", "Back to menu"),
+    ]
+    for i, (key, desc) in enumerate(controls):
+        ry = sep_y + 44 + i * 26
+        screen.blit(font_menu.render(key, True, BLACK), (cx - 180, ry))
+        screen.blit(font_menu.render(desc, True, BLACK), (cx + 20, ry))
 
 def toggle_fullscreen():
-    global screen, fullscreen
+    global screen, fullscreen, SCREENSIZE, background
 
-    fullscreen = not fullscreen  #Zet fullscreen aan of uit
+    fullscreen = not fullscreen
 
     if fullscreen:
-        screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)  #Volledig scherm
+        screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     else:
-        screen = pygame.display.set_mode(SCREENSIZE, pygame.RESIZABLE, vsync=1)  #Normaal scherm
+        screen = pygame.display.set_mode((800, 800), pygame.RESIZABLE, vsync=1)
+
+    SCREENSIZE = list(screen.get_size())
+    cam.resize(SCREENSIZE)
+    background = make_background(SCREENSIZE)
 
 
 def time_to_seconds(s):
@@ -382,33 +488,37 @@ def time_to_seconds(s):
         sec, ms = rest.split(".")   #Splitst seconden en honderdsten
         return int(m) * 60 + int(sec) + int(ms) / 100  #Zet tijd om naar seconden
     except Exception:
-        return float("inf")         #Geeft een grote waarde terug als het fout gaat
+        return float("inf") #Geeft een grote waarde terug als het fout gaat
 
 def _parse_time(s):
     return time_to_seconds(s)
 
 def draw_level_complete(screen):
     overlay = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
-    overlay.fill((0, 0, 0, 160))
+    overlay.fill((0, 0, 0, 160))  #Maakt een zwarte transparante achtergrond
     screen.blit(overlay, (0, 0))
 
-    cx = screen.get_width() // 2
+    cx = screen.get_width() // 2  #Midden van het scherm
+
+    """Tekent de titel"""
     title = font_klein.render("Level Complete!", True, (255, 220, 50))
     screen.blit(title, title.get_rect(center=(cx, 200)))
 
+    """Laat de tijd zien"""
     time_surf = font_klein.render(f"Time:   {complete_time}", True, (255, 255, 255))
     screen.blit(time_surf, time_surf.get_rect(center=(cx, 290)))
 
+    """Laat aantal deaths zien"""
     death_surf = font_klein.render(f"Deaths: {complete_deaths}", True, (255, 100, 100))
     screen.blit(death_surf, death_surf.get_rect(center=(cx, 360)))
 
-    best = best_times.get(level_id, None)
+    best = best_times.get(level_id, None)  #Haalt de beste tijd van dit level op"""
     if best:
         best_surf = font_menu.render(f"Best: {best}", True, (100, 255, 180))
-        screen.blit(best_surf, best_surf.get_rect(center=(cx, 430)))
+        screen.blit(best_surf, best_surf.get_rect(center=(cx, 430)))  #Laat beste tijd zien"""
 
     hint = font_menu.render("Press ENTER to continue", True, (180, 180, 180))
-    screen.blit(hint, hint.get_rect(center=(cx, 520)))
+    screen.blit(hint, hint.get_rect(center=(cx, 520)))  #Enter om verder te gaan"""
 
 bg_raw = pygame.image.load("textures/background.png").convert()
 
@@ -420,8 +530,11 @@ def make_background(screen_size):
     return pygame.transform.smoothscale(bg_raw, (bw, bh))
 
 def draw_background(screen, background, player):
-    sw, sh = SCREENSIZE
+    sw, sh = screen.get_size()
     bw, bh = background.get_size()
+
+    max_x = bw - sw
+    max_y = bh - sh
 
     parallax_x = 0.05
     parallax_y = 0.02
@@ -442,6 +555,9 @@ def draw_background(screen, background, player):
 
 background = make_background(SCREENSIZE)
 
+"""CLASSES"""
+
+""" deze class maakt de tiles aan deze kunnen worden geupdate en getekend op het scherm"""
 class Tile(pygame.sprite.Sprite):
     def __init__(self, gx, gy, tile_id):
         super().__init__()
@@ -451,9 +567,17 @@ class Tile(pygame.sprite.Sprite):
         self.friction = 30
         self.rect = self.image.get_rect(topleft=(gx * grid_size, gy * grid_size))
 
+        self.solid = self.info.get("solid", False)
+        self.spike = self.info.get("spike", False)
+        self.bouncy = self.info.get("bouncy", False)
+        self.glide = self.info.get("glide", False)
+        self.super_pickup = self.info.get("super_pickup", False)
+
     def draw(self):
         screen.blit(self.image, cam.apply_rect(self.rect))
 
+
+"""dit is de class om de stopwatch te maken, deze kan worden gestart, gereset en de tijd kan worden opgevraagd in seconden of in een string in het formaat mm:ss.ms"""
 class Stopwatch:
     def __init__(self):
         self.start_time = None
@@ -477,42 +601,52 @@ class Stopwatch:
         milliseconds = int((elapsed % 1) * 100)
         return f"{minutes:02d}:{seconds:02d}.{milliseconds:02d}"
 
-class Button(pygame.sprite.Sprite):
-    def __init__(self, x, y, w, h, transparent, color, fontsize, fontoffsetX, fontoffsetY, text):
+"""deze class maakt de knoppen aan, deze kunnen worden geupdate en getekend op het scherm.
+De knoppen kunnen ook transparant zijn, en er kan tekst op worden gezet met een bepaalde fontgrootte en offset."""
+
+class Update_text(pygame.sprite.Sprite):
+    def __init__(self,x,y,w,h,Transparent, color,fontsize, fontoffsetX, fontoffsetY, text):
         super().__init__()
         self.image = pygame.Surface((w, h))
         self.image.fill(color)
         self.rect = self.image.get_rect()
-        self.rect.topleft = [x, y]
-        self.font = pygame.font.SysFont("Arial", fontsize)
+        self.rect.topleft = [x , y]
+        self.font = font_klein
         self.fontoffsetX = fontoffsetX
         self.fontoffsetY = fontoffsetY
-        self.transparent = transparent
+        self.color = color
+        self.Transparent = Transparent
         self.text = text
-
-    def update(self):
-        pass
-
     def draw(self):
-        if not self.transparent:
-            screen.blit(self.image, self.rect.topleft)
-        text_surface = self.font.render(self.text, True, BLACK)
-        screen.blit(text_surface, [self.rect.topleft[0] + self.fontoffsetX, self.rect.topleft[1] + self.fontoffsetY])
+        if not self.Transparent:
+            screen.blit(self.image, [self.rect.topleft,self.rect.topleft])
+        text_surface = self.font.render(self.text, True, self.color)
+        screen.blit(text_surface, [self.rect.topleft[0] + self.fontoffsetX, self.rect.topleft[1]])
+
+
+"""hier zijn de player, gun, blocks, texts en stopwatch aangemaakt, en de camera is ingesteld om te volgen op de player"""
 cam = Camera(SCREENSIZE)
-cam = Camera(SCREENSIZE)
+
 player_group.add(Player(500, 0, 50, 50, BLUE))
 player = player_group.sprite
 gun_group.add(Gun(10, 10))
 gun = gun_group.sprite
-button1 = Button(500, 50, 175, 30, True, GREEN, 30, 5, -3, "BULLETS:  " + str(gun.bullets))
-button2 = Button(500, 100, 175, 30, True, GREEN, 30, 5, -3, "BULLET TYPE: " + str(gun.bullet_type))
-button3 = Button(500, 150, 175, 30, True, GREEN, 30, 5, -3, "TIME: 00:00.00")
-update_texts.add(button1, button2, button3)
+
 stopwatch = Stopwatch()
 stopwatch.start()
+
+time_text = Update_text(20, 200, 175, 30, True, GREEN,
+                      30, 5, fontoffsetY= -3, text= 'TIME: 00:00.00')
+
+texts.add(time_text)
+
 start_music("menu")
 active_hook = None
+
+
+"""dit is de grote game loop, hier worden alle events afgehandeld, het scherm wordt geupdate en getekend."""
 while True:
+    """ -------------------- EVENTS --------------------"""
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -531,7 +665,9 @@ while True:
             cam.resize(SCREENSIZE)
             screen = pygame.display.set_mode(SCREENSIZE, flags=pygame.RESIZABLE, vsync=1)
 
+        """menu input"""
         if state == "menu":
+
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 _, _, settings_knop = get_settings_button_rect()
                 _, _, editor_knop = get_editor_button_rect()
@@ -544,6 +680,7 @@ while True:
                     button_w = 160
                     button_h = 40
                     start_y = 200
+
                     start_index = menu_page * LEVELS_PER_PAGE
                     end_index = min(start_index + LEVELS_PER_PAGE, len(level_files))
 
@@ -551,6 +688,7 @@ while True:
                         x = screen.get_width() // 2 - button_w // 2
                         y = start_y + button_index * 50
                         rect = pygame.Rect(x, y, button_w, button_h)
+
                         if rect.collidepoint(event.pos):
                             level_id = level_index
                             huidig_level = f"levels/{level_files[level_id]}"
@@ -563,6 +701,7 @@ while True:
                         level_id -= 1
                         huidig_level = f"levels/{level_files[level_id]}"
                         lvl_switch.play()
+
                         menu_page = level_id // LEVELS_PER_PAGE
 
                 elif event.key == pygame.K_DOWN:
@@ -596,6 +735,11 @@ while True:
                         deaths = 0
                         reset_run_state(False)
                         lowest = create_low_border()
+
+                        SCREENSIZE = list(screen.get_size())
+                        cam.resize(SCREENSIZE)
+                        background = make_background(SCREENSIZE)
+
                         start_music("game")
                         state = "game"
 
@@ -603,7 +747,8 @@ while True:
                     pygame.quit()
                     sys.exit()
 
-        elif state == "game":
+        """Game input"""
+        if state == "game":
             if event.type == pygame.MOUSEBUTTONDOWN:
                 gun.shoot(player)
                 stopwatch.start()
@@ -615,6 +760,7 @@ while True:
                 elif event.key == pygame.K_t:
                     reset_run_state(False)
                     lowest = create_low_border()
+                    reset_run_state(False)
                 elif event.key == pygame.K_h:
                     if not active_hook:
                         active_hook = hook(player.rect.centerx, player.rect.centery, 10, 10, gun.angle, 30)
@@ -622,18 +768,26 @@ while True:
                         player.derope()
                         active_hook = None
 
+        elif state == "level_complete":
+            if event.type == pygame.KEYDOWN:
+                if event.key in (pygame.K_RETURN, pygame.K_ESCAPE):
+                    state = "menu" #Terug naar menu
+                    deaths = 0  #Reset deaths
+                    start_music("menu") #Start menu muziek
+
         elif state == "settings":
             cx = screen.get_width() // 2
             gap = 60
             ty = 385
-            fs_rect = pygame.Rect(cx + 10, ty, TOGGLE_W, TOGGLE_H)
-            spd_rect = pygame.Rect(cx + 10, ty + gap, TOGGLE_W, TOGGLE_H)
-            dth_rect = pygame.Rect(cx + 10, ty + gap * 2, TOGGLE_W, TOGGLE_H)
-            slider = get_slider_rect(screen)
-            home_knop = pygame.Rect(homekonp_rect.left - 6, homekonp_rect.top - 4,
-                                    homekonp_rect.width + 12, homekonp_rect.height + 8)
+            fs_rect = pygame.Rect(cx + 10, ty, TOGGLE_W, TOGGLE_H) #Fullscreen knop
+            spd_rect = pygame.Rect(cx + 10, ty + gap, TOGGLE_W, TOGGLE_H) #Speed knop
+            dth_rect = pygame.Rect(cx + 10, ty + gap * 2, TOGGLE_W, TOGGLE_H) #Death counter knop
+            slider = get_slider_rect(screen)    #Volumebalk
+            _, _, home_knop = get_home_button_rect()
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                _, _, home_knop = get_home_button_rect()
+
                 if home_knop.collidepoint(event.pos):
                     state = "menu"
                 elif fs_rect.collidepoint(event.pos):
@@ -649,22 +803,22 @@ while True:
                         slider_dragging = True
                         volume = int((event.pos[0] - slider.left) / slider.width * 100)
                         volume = max(0, min(100, volume))
-                        pygame.mixer.music.set_volume(volume / 100)
+                        pygame.mixer.music.set_volume(volume / 100) #Past volume aan
 
             elif event.type == pygame.MOUSEBUTTONUP:
-                slider_dragging = False
+                slider_dragging = False #Stopt met slepen
 
             elif event.type == pygame.MOUSEMOTION and slider_dragging:
                 volume = int((event.pos[0] - slider.left) / slider.width * 100)
-                volume = max(0, min(100, volume))
-                pygame.mixer.music.set_volume(volume / 100)
+                volume = max(0, min(100, volume)) #Houdt volume tussen 0 en 100
+                pygame.mixer.music.set_volume(volume / 100) #Past volume aan
 
             elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                state = "menu"
+                state = "menu" #Esc is terug naar menu
 
+    """ draw en update"""
     if state == "menu":
         draw_menu(screen)
-
 
     elif state == "game":
 
@@ -683,7 +837,7 @@ while True:
 
         if end_rect and player.rect.colliderect(end_rect):
             complete_time = stopwatch.get_formatted_time()  #Sla eindtijd op
-            complete_deaths = deaths  #Sla deaths op
+            complete_deaths = deaths  #Sla deaths op"""
             level_times[level_id] = complete_time  #Bewaar tijd van dit level
 
             if level_id not in best_times or stopwatch.get_time() < time_to_seconds(best_times[level_id]):
@@ -718,12 +872,9 @@ while True:
             b.update()
             b.draw()
 
-        button1.text = "BULLETS: " + str(gun.bullets)
-        button2.text = "BULLET TYPE: " + str(gun.bullet_type)
-        button3.text = "TIME: " + stopwatch.get_formatted_time()
+        time_text.text = 'TIME: ' + stopwatch.get_formatted_time()
 
-        for b in update_texts:
-            b.update()
+        for b in texts:
             b.draw()
 
         if show_deaths:
